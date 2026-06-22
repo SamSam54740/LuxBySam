@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail Privé - LuxBySam</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="gate-modal" class="modal-overlay">
+        <div class="modal-content text-center gate-content">
+            <div class="flag-line"></div>
+            <h2 class="gate-title">Accès Restreint</h2>
+            <p class="gate-desc">Veuillez vous identifier pour accéder au service LuxBySam.</p>
+            
+            <input type="password" id="access-code" placeholder="Code d'accès" class="gate-input">
+            
+            <div class="legal-checkbox gate-check">
+                <input type="checkbox" id="age-check">
+                <label for="age-check">Je certifie avoir 18 ans ou plus.</label>
+            </div>
+            
+            <button id="btn-enter" class="btn-lux-blue w-100">DÉVERROUILLER</button>
+            <p id="gate-error" class="error-msg hidden">Code incorrect ou case non cochée.</p>
+        </div>
+    </div>
+
+    <header id="main-header" class="hidden">
+        <div class="container header-flex">
+            <div class="logo cursor-pointer" id="go-home">
+                <span class="c-red">Lux</span><span class="c-black">By</span><span class="c-blue">Sam</span>
+            </div>
+            <div class="header-right">
+                <button id="nav-admin-btn" class="btn-outline hidden">⚙️ Espace Admin</button>
+                <button onclick="lockSite()" class="btn-outline hidden" id="nav-lock-btn" style="color: #dc3545; border-color: #dc3545;">🔒 Verrouiller</button>
+                <div class="cart-icon" id="open-cart">
+                    🛒 Mon Panier <span id="cart-count" class="badge">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-flag"></div>
+    </header>
+
+    <main id="main-content" class="hidden">
+        
+        <section class="search-section container" id="search-section">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="Rechercher une marque, un produit..." autocomplete="off" tabindex="1">
+                <button id="clear-search" class="hidden">✖</button>
+                <ul id="search-dropdown" class="search-dropdown hidden"></ul>
+            </div>
+        </section>
+
+        <section id="view-categories" class="container">
+            <div class="immersive-home">
+                <div class="glass-wrapper">
+                    <div class="vip-header">
+                        <h2>Commandez Maintenant</h2>
+                        <div class="vip-line"></div>
+                        <p>Choisissez une catégorie pour commencer vos achats</p>
+                    </div>
+                    <div class="glass-grid">
+                        <div class="glass-card" data-cat="Cigarettes">
+                            <div class="gc-glow"></div>
+                            <div class="gc-content"><span class="gc-icon">🚬</span><h3>Cigarettes</h3></div>
+                        </div>
+                        <div class="glass-card" data-cat="Tabac">
+                            <div class="gc-glow"></div>
+                            <div class="gc-content"><span class="gc-icon">🍂</span><h3>Tabac à rouler</h3></div>
+                        </div>
+                        <div class="glass-card" data-cat="Cigares">
+                            <div class="gc-glow"></div>
+                            <div class="gc-content"><span class="gc-icon">🕴️</span><h3>Cigares</h3></div>
+                        </div>
+                        <div class="glass-card" data-cat="Alcool">
+                            <div class="gc-glow"></div>
+                            <div class="gc-content"><span class="gc-icon">🥃</span><h3>Alcools</h3></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-products" class="container hidden">
+            <div class="products-header">
+                <div class="ph-left">
+                    <button id="btn-back-cats" class="btn-outline">← Retour</button>
+                    <h2 id="current-category-title">Catégorie</h2>
+                </div>
+                <div class="ph-right sort-container">
+                    <label for="sort-select">Trier par :</label>
+                    <select id="sort-select">
+                        <option value="alpha">Ordre alphabétique (A-Z)</option>
+                        <option value="price-asc">Prix croissant (- cher au + cher)</option>
+                        <option value="price-desc">Prix décroissant (+ cher au - cher)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="products-list" id="products-container"></div>
+        </section>
+
+        <section id="view-cart" class="container hidden">
+            <div class="cart-page-header">
+                <button id="btn-back-from-cart" class="btn-outline">← Continuer mes achats</button>
+                <h2>Mon Panier</h2>
+            </div>
+
+            <div class="cart-layout">
+                <div class="cart-items-section">
+                    <div id="cart-page-items"></div>
+                </div>
+                <div class="cart-summary-section hidden" id="cart-page-summary">
+                    <div class="summary-card">
+                        <h3>Récapitulatif</h3>
+                        <div class="total-line mt-10">
+                            <span>Total de la commande</span>
+                            <span class="total-price"><span id="total-price-val">0.00</span> €</span>
+                        </div>
+                        <p class="payment-info mt-10">Paiement à remettre directement à Sam lors de la livraison (Cash ou Virement).</p>
+                        <hr class="summary-hr">
+                        
+                        <form id="checkout-form">
+                            <h4>Vos coordonnées</h4>
+                            <input type="text" id="client-name" placeholder="Prénom et Nom" required>
+                            <input type="email" id="client-email" placeholder="Adresse E-mail" required>
+                            <input type="tel" id="client-phone" placeholder="Téléphone (Facultatif)">
+                            <div class="legal-checkbox cart-checkbox mt-10">
+                                <input type="checkbox" id="legal-check-order" required>
+                                <label for="legal-check-order">Je confirme avoir plus de 18 ans.</label>
+                            </div>
+                            <button type="submit" class="btn-lux-blue w-100 valider-btn">VALIDER MA COMMANDE</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="view-confirmation" class="container hidden">
+            <div class="confirmation-box text-center">
+                <div class="success-icon">✨</div>
+                <h2>Commande Validée !</h2>
+                <p>Merci pour votre confiance, <span id="conf-name" style="font-weight: bold;"></span>. Votre demande a bien été transmise à Sam.</p>
+                <div class="order-receipt">
+                    <p>Numéro de commande</p>
+                    <h3 id="order-number">LBS-00000</h3>
+                </div>
+                <p class="mt-10" style="color: #666; font-size: 0.9rem;">
+                    Un e-mail récapitulatif contenant votre ticket de caisse virtuel vient de vous être envoyé.
+                </p>
+                <button id="btn-back-home" class="btn-lux-blue w-100 mt-10" style="max-width: 300px;">Retour à l'accueil</button>
+            </div>
+        </section>
+
+        <section id="view-admin" class="container hidden" style="margin-top: 40px;">
+            <div class="admin-header text-center" style="margin-bottom: 40px;">
+                <h2>⚙️ Espace Gestion de Sam</h2>
+                <p>Bienvenue dans votre centre de commandement</p>
+            </div>
+
+            <div class="admin-tabs" style="margin-bottom: 40px;">
+                <button class="tab-btn active" onclick="switchAdminTab('tab-commandes')">📦 Commandes</button>
+                <button class="tab-btn" onclick="switchAdminTab('tab-prix')">🏷️ Gestion des Prix</button>
+                <button class="tab-btn" onclick="switchAdminTab('tab-finances')">📊 Finances & Bénéfices</button>
+                <button class="tab-btn" onclick="switchAdminTab('tab-suggestions')">💡 Suggestions</button>
+            </div>
+
+            <div id="tab-commandes" class="admin-tab-content active" style="margin-bottom: 50px;">
+                <h3>Dernières Commandes Reçues</h3>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>N° Commande</th>
+                                <th>Client</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                                <th>Statut</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-orders-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-prix" class="admin-tab-content hidden" style="margin-bottom: 50px;">
+                <h3>Ajustement des Tarifs</h3>
+                <div class="price-controls-card" style="margin-bottom: 30px;">
+                    <div class="pc-row">
+                        <label for="admin-cat-select">1. Choisir une catégorie :</label>
+                        <select id="admin-cat-select" onchange="loadAdminPrices()" style="padding: 8px; border-radius: 5px;">
+                            <option value="Cigarettes">Cigarettes</option>
+                            <option value="Tabac">Tabac à rouler</option>
+                            <option value="Cigares">Cigares</option>
+                            <option value="Alcool">Alcools</option>
+                        </select>
+                    </div>
+                    <div class="pc-row bulk-edit-box">
+                        <label>2. Action de masse (Appliquer à toute la catégorie) :</label>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                            <span>Augmenter de</span>
+                            <input type="number" id="bulk-price-increase" placeholder="Ex: 10" style="width: 80px; padding: 8px;">
+                            <span>€</span>
+                            <button class="btn-lux-blue" onclick="applyBulkIncrease()" style="padding: 8px 15px;">Appliquer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="margin-bottom: 20px;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th>Prix Coûtant</th>
+                                <th>Prix de Vente (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-price-list"></tbody>
+                    </table>
+                </div>
+                <button class="btn-lux-blue w-100" onclick="saveNewPrices()">SAUVEGARDER ET TÉLÉCHARGER LE FICHIER</button>
+            </div>
+
+            <div id="tab-finances" class="admin-tab-content hidden" style="margin-bottom: 50px;">
+                <h3>Tableau de Bord Financier</h3>
+                
+                <div class="finance-cards" style="margin-bottom: 30px;">
+                    <div class="f-card">
+                        <h4>Chiffre d'Affaires</h4>
+                        <span class="f-amount text-green">1 245.00 €</span>
+                        <span class="f-trend text-green">↗ +12% ce mois</span>
+                    </div>
+                    <div class="f-card highlight" style="background: #0b1d3a;">
+                        <h4 style="color: white;">Bénéfice Net Estimé</h4>
+                        <span class="f-amount text-green">380.00 €</span>
+                        <span class="f-trend text-green">↗ +8% ce mois</span>
+                    </div>
+                    <div class="f-card cursor-pointer" onclick="addExpense()" style="border: 2px dashed #dc3545; transition: 0.3s;">
+                        <h4 style="color: #dc3545;">Dépenses (Achats / Essence)</h4>
+                        <span class="f-amount text-red" id="expense-amount-total">- 865.00 €</span>
+                        <span style="font-size: 0.8rem; color: #666;">🖱️ Cliquez ici pour ajouter</span>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-box" style="margin-bottom: 20px;">
+                        <h4>Répartition des ventes</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="salesPieChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-box" style="margin-bottom: 20px;">
+                        <h4>Évolution des revenus</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="revenueBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="expenses-section" style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                        <h4 style="margin:0;">Historique des Factures</h4>
+                        <button class="btn-outline" onclick="addExpense()" style="padding: 5px 15px; font-size: 0.85rem;">+ Nouvelle Facture</button>
+                    </div>
+                    <ul id="expenses-list" style="list-style: none; padding: 0; max-height: 250px; overflow-y: auto;">
+                        </ul>
+                </div>
+            </div>
+
+            <div id="tab-suggestions" class="admin-tab-content hidden" style="margin-bottom: 50px;">
+                <h3>Propositions des clients</h3>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead><tr><th>Produit souhaité</th><th>Date</th></tr></thead>
+                        <tbody id="admin-suggestions-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer id="main-footer" class="hidden">
+        <div class="container text-center">
+            <div class="legal-warnings">
+                <p class="warning-alcohol">⚠️ L'abus d'alcool est dangereux pour la santé, à consommer avec modération.</p>
+                <p class="warning-tobacco">⚠️ Fumer provoque le cancer et des maladies cardiaques.</p>
+            </div>
+            <p class="copyright">&copy; 2026 LuxBySam. Ce site est une plateforme privée de mise en relation pour mandat d'achats transfrontaliers entre particuliers.</p>
+            <div class="flags mt-10">🇫🇷 🇱🇺 🇩🇪</div>
+        </div>
+    </footer>
+
+    <div id="order-modal" class="modal-overlay hidden" style="z-index: 10001; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.7);">
+        <div class="order-modal-box">
+            <h2 id="om-title" style="margin-bottom: 15px;">Détails Commande</h2>
+            <div id="om-content"></div>
+            
+            <h4 style="margin-top: 20px;">Modifier le statut :</h4>
+            <select id="om-status" class="status-select">
+                <option value="pending">En attente de traitement</option>
+                <option value="progress">En cours de livraison</option>
+                <option value="delivered">Livrée & Payée</option>
+                <option value="cancelled">Annulée</option>
+            </select>
+            
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button class="btn-outline w-100" onclick="closeOrderModal()">Fermer</button>
+                <button class="btn-lux-blue w-100" onclick="saveOrderStatus()">Mettre à jour</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 10000; justify-content: center; align-items: center; cursor: zoom-out;">
+        <span onclick="closeImageModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 50px; font-weight: bold; cursor: pointer;">&times;</span>
+        <img id="large-image" src="" alt="Zoom Produit" style="max-width: 90%; max-height: 85vh; object-fit: contain; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() { emailjs.init("6hbHDOqEbUhj8CrKz"); })(); // Ton code API EmailJS
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+
+    <div id="custom-alert-modal" class="modal-overlay hidden" style="z-index: 9999; background: rgba(0,0,0,0.6);">
+        <div class="order-modal-box text-center" style="max-width: 400px; padding: 40px 30px;">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🔔</div>
+            <p id="custom-alert-text" style="font-size: 1.1rem; margin-bottom: 25px; font-weight: 600; color: #1a1a1a;"></p>
+            <button class="btn-lux-blue w-100" onclick="closeCustomAlert()">OK, j'ai compris</button>
+        </div>
+    </div>
+
+    <div id="expense-modal" class="modal-overlay hidden" style="z-index: 9998; background: rgba(0,0,0,0.6);">
+        <div class="order-modal-box">
+            <h2 style="margin-bottom: 20px;">Nouvelle Facture</h2>
+            <input type="text" id="expense-name-input" placeholder="Désignation (ex: Essence, Achat DFS)" class="gate-input">
+            <input type="number" id="expense-amount-input" placeholder="Montant en € (ex: 45.50)" class="gate-input" step="0.01">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-outline w-100" onclick="document.getElementById('expense-modal').classList.add('hidden')">Annuler</button>
+                <button class="btn-lux-blue w-100" onclick="validateExpense()">Ajouter au bilan</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
