@@ -290,25 +290,41 @@ window.changeQty = function(id, delta) {
     updateCartUI();
 };
 
-function handleCheckout(e) {
+async function handleCheckout(e) {
     e.preventDefault();
     const name = document.getElementById('client-name').value;
     const orderId = 'LBS-' + Math.floor(10000 + Math.random() * 90000);
     let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0).toFixed(2);
     
-    let htmlRecap = `<table style="width:100%; border-collapse:collapse;">`;
-    cart.forEach(item => {
-        htmlRecap += `<tr><td style="padding:15px 0; border-bottom:1px solid #eee;"><strong>${item.name}</strong><br><span style="color:#888;">Qté: ${item.qty}</span></td><td style="padding:15px 0; border-bottom:1px solid #eee; text-align:right; font-weight:bold;">${(item.price * item.qty).toFixed(2)} €</td></tr>`;
-    });
-    htmlRecap += `</table>`;
+    // 1. Préparation des données pour Firebase
+    const commandeData = {
+        orderId: orderId,
+        client: name,
+        email: document.getElementById('client-email').value,
+        total: parseFloat(total),
+        date: new Date().toLocaleDateString(),
+        status: 'pending',
+        items: cart.map(item => item.name + ' (x' + item.qty + ')').join(', ')
+    };
 
-    hideAllViews(); ui.searchSection.classList.add('hidden');
+    try {
+        // 2. Envoi vers Firestore
+        await setDoc(doc(db, "orders", orderId), commandeData);
+        console.log("✅ Commande envoyée sur le Cloud !");
+    } catch (error) {
+        console.error("❌ Erreur lors de l'envoi :", error);
+    }
+
+    // 3. Suite de ton code (Confirmation, email, etc.)
+    hideAllViews(); 
+    ui.searchSection.classList.add('hidden');
     document.getElementById('conf-name').innerText = name;
     document.getElementById('order-number').innerText = orderId;
     views.confirmation.classList.remove('hidden');
-
-    envoyerEmailConfirmation(name, document.getElementById('client-email').value, orderId, htmlRecap, total);
-    cart = []; updateCartUI(); document.getElementById('checkout-form').reset();
+    
+    cart = []; 
+    updateCartUI(); 
+    document.getElementById('checkout-form').reset();
 }
 
 function envoyerEmailConfirmation(nom, email, orderId, htmlRecap, total) {

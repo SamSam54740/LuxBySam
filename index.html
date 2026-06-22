@@ -345,5 +345,24 @@
             </div>
         </div>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDx_lxansbhWlyVlBRD9NCXFGxkWbMk8qw",
+            authDomain: "luxbysam-32719.firebaseapp.com",
+            projectId: "luxbysam-32719",
+            storageBucket: "luxbysam-32719.firebasestorage.app",
+            messagingSenderId: "830610988030",
+            appId: "1:830610988030:web:8da34bb5b137c887cc3eaf"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app); // C'est ici que le pont est créé !
+    </script>
+
+    <script src="script.js"></script>
 </body>
 </html>
