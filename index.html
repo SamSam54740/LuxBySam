@@ -324,7 +324,6 @@
         (function() { emailjs.init("6hbHDOqEbUhj8CrKz"); })(); // Ton code API EmailJS
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script>
 
     <div id="custom-alert-modal" class="modal-overlay hidden" style="z-index: 9999; background: rgba(0,0,0,0.6);">
         <div class="order-modal-box text-center" style="max-width: 400px; padding: 40px 30px;">
@@ -360,7 +359,10 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        window.db = getFirestore(app); // C'est ici que le pont est créé !
+        
+        window.db = getFirestore(app);
+        window.setDoc = setDoc; // On expose setDoc
+        window.doc = doc;
     </script>
 
     <script src="script.js"></script>
