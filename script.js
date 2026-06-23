@@ -9,11 +9,15 @@ let views = {};
 let ui = {};
 let suggestions = [];
 
+// --- VARIABLES CLOUD (Vides au démarrage) ---
+let adminOrders = [];
+let expensesList = [];
+let currentEditingOrderId = null;
+
 // ==========================================
-// 2. INITIALISATION SÉCURISÉE (Le correctif)
+// 2. INITIALISATION & CHARGEMENT FIREBASE
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    // On initialise les éléments DOM une fois que la page est prête
     views = {
         home: document.getElementById('view-categories'),
         products: document.getElementById('view-products'),
@@ -34,8 +38,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         navAdminBtn: document.getElementById('nav-admin-btn')
     };
 
+    // 1. Charger le catalogue et les données Cloud en premier
+    await loadDataFromFirebase();
     await chargerCatalogue(); 
     
+    // 2. Déverrouillage si déjà connecté
     const role = sessionStorage.getItem('luxbysam_role');
     if (role === 'user' || role === 'admin') {
         unlockSite(role);
@@ -44,12 +51,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateCartUI();
 });
 
+// NOUVEAU : Fonction qui télécharge toutes les données de ton espace Admin
+async function loadDataFromFirebase() {
+    try {
+        const orderSnap = await window.getDocs(window.collection(window.db, "orders"));
+        adminOrders = orderSnap.docs.map(d => d.data());
+        
+        const expSnap = await window.getDocs(window.collection(window.db, "expenses"));
+        expensesList = expSnap.docs.map(d => d.data());
+
+        const sugSnap = await window.getDocs(window.collection(window.db, "suggestions"));
+        suggestions = sugSnap.docs.map(d => d.data());
+        
+        console.log("✅ Données Cloud synchronisées !");
+    } catch (e) { console.error("Erreur de chargement Firebase:", e); }
+}
+
 async function chargerCatalogue() {
     try {
         const response = await fetch('catalogue_dfs.csv');
         const data = await response.text();
         const lignes = data.split('\n');
         products = []; 
+
+        // NOUVEAU : On récupère les prix modifiés dans l'admin
+        const priceSnap = await window.getDocs(window.collection(window.db, "prices"));
+        const cloudPrices = {};
+        priceSnap.forEach(d => cloudPrices[d.id] = d.data().price);
 
         for (let i = 1; i < lignes.length; i++) {
             if (lignes[i].trim() === '') continue;
@@ -58,15 +86,20 @@ async function chargerCatalogue() {
             let isNewFormat = colonnes.length >= 7;
 
             if (colonnes.length >= 6) {
+                let id = i.toString();
                 let prixCoutant = parseFloat(colonnes[4].replace(/"/g, '').replace(',', '.').trim());
-                let prixVente = isNewFormat ? parseFloat(colonnes[5].replace(/"/g, '').replace(',', '.').trim()) : prixCoutant;
+                
+                // Si un prix existe dans Firebase, on l'utilise, sinon on prend celui du CSV
+                let prixCSV = isNewFormat ? parseFloat(colonnes[5].replace(/"/g, '').replace(',', '.').trim()) : prixCoutant;
+                let prixVente = cloudPrices[id] ? cloudPrices[id] : prixCSV;
+                
                 let photo = isNewFormat ? colonnes[6].replace(/"/g, '').trim() : colonnes[5].replace(/"/g, '').trim();
                 let desc = colonnes[3].replace(/"/g, '').trim();
                 let nom = colonnes[2].replace(/"/g, '').trim();
                 let cat = colonnes[1].replace(/"/g, '').trim();
 
                 if (nom && !isNaN(prixCoutant)) {
-                    products.push({ id: i, cat: cat, name: nom, desc: desc, priceCost: prixCoutant, price: prixVente, img: 'photos_produits/' + photo });
+                    products.push({ id: parseInt(id), cat: cat, name: nom, desc: desc, priceCost: prixCoutant, price: prixVente, img: 'photos_produits/' + photo });
                 }
             }
         }
@@ -91,7 +124,6 @@ document.getElementById('btn-enter').addEventListener('click', () => {
 });
 
 function unlockSite(role) {
-    // Au lieu de cacher, on supprime l'élément du DOM pour qu'il ne bloque plus rien
     const gate = document.getElementById('gate-modal');
     if (gate) gate.remove(); 
     
@@ -132,37 +164,32 @@ function setupEventListeners() {
         showCategory();
     });
 
-    // BARRE DE RECHERCHE SIMPLE (Sans interférence)
     ui.searchInput.addEventListener('input', handleSearchDropdown);
     ui.searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault(); 
-        executeSearch(ui.searchInput.value);
-    }
+        if (e.key === 'Enter') { e.preventDefault(); executeSearch(ui.searchInput.value); }
     });
     ui.clearSearch.addEventListener('click', closeSearch);
 
     document.getElementById('open-cart').addEventListener('click', showCartPage);
     document.getElementById('checkout-form').addEventListener('submit', handleCheckout);
-
 }
-
-
 
 function hideAllViews() {
     Object.values(views).forEach(v => v.classList.add('hidden'));
     ui.searchSection.classList.remove('hidden'); 
+    
+    // NOUVEAU : Force la page à remonter tout en haut en douceur
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function showHome() { hideAllViews(); closeSearch(); views.home.classList.remove('hidden'); }
 function closeSearch() { ui.searchInput.value = ''; ui.searchDropdown.classList.add('hidden'); ui.clearSearch.classList.add('hidden'); }
 
 // ==========================================
-// 5. MOTEUR DE RECHERCHE
+// 5. MOTEUR DE RECHERCHE & SUGGESTIONS
 // ==========================================
 function handleSearchDropdown(e) {
     const query = e.target.value.toLowerCase().trim();
-    
     if (query.length < 2) { 
         ui.searchDropdown.classList.add('hidden');
         ui.clearSearch.classList.add('hidden');
@@ -210,10 +237,15 @@ window.executeSearch = function(query) {
     }
 };
 
-window.handleSuggestion = function(e) {
+window.handleSuggestion = async function(e) {
     e.preventDefault();
     const prodName = document.getElementById('suggest-name').value;
-    suggestions.push({ name: prodName, date: new Date().toLocaleDateString('fr-FR') });
+    const newSug = { name: prodName, date: new Date().toLocaleDateString('fr-FR') };
+    
+    // NOUVEAU : Sauvegarde la suggestion dans le Cloud
+    await window.setDoc(window.doc(window.db, "suggestions", Date.now().toString()), newSug);
+    suggestions.push(newSug);
+    
     customAlert(`✅ Merci ! Votre demande pour "${prodName}" a bien été transmise à Sam.`);
     document.getElementById('suggest-form').reset();
 };
@@ -249,7 +281,7 @@ function renderProductCard(p) {
 }
 
 // ==========================================
-// 6. PANIER & COMMANDE
+// 6. PANIER & COMMANDE CLOUD
 // ==========================================
 window.addToCart = function(id) {
     const product = products.find(p => p.id === id);
@@ -290,47 +322,52 @@ window.changeQty = function(id, delta) {
     updateCartUI();
 };
 
-async function handleCheckout(e) {
+window.handleCheckout = async function(e) {
     e.preventDefault();
     const name = document.getElementById('client-name').value;
+    const email = document.getElementById('client-email').value;
     const orderId = 'LBS-' + Math.floor(10000 + Math.random() * 90000);
     let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0).toFixed(2);
     
-    // 1. Préparation des données pour Firebase
+    // 1. On prépare le reçu HTML pour l'e-mail
+    let htmlRecap = cart.map(item => `<li>${item.name} (x${item.qty}) - ${(item.price * item.qty).toFixed(2)} €</li>`).join('');
+
+    // 2. Préparation des données pour Firebase
     const commandeData = {
-        orderId: orderId,
+        id: orderId, // <-- On utilise "id" pour coller à l'admin
         client: name,
-        email: document.getElementById('client-email').value,
+        email: email,
         total: parseFloat(total),
-        date: new Date().toLocaleDateString(),
+        date: new Date().toLocaleDateString('fr-FR'),
         status: 'pending',
         items: cart.map(item => item.name + ' (x' + item.qty + ')').join(', ')
     };
 
     try {
-        // 2. Envoi vers Firestore
-        await setDoc(doc(db, "orders", orderId), commandeData);
+        // 3. Envoi vers Firestore
+        await window.setDoc(window.doc(window.db, "orders", orderId), commandeData);
+        adminOrders.unshift(commandeData); // Mise à jour locale pour l'admin
         console.log("✅ Commande envoyée sur le Cloud !");
+        
+        // 4. Envoi de l'e-mail via EmailJS
+        envoyerEmailConfirmation(name, email, orderId, `<ul>${htmlRecap}</ul>`, total);
+
     } catch (error) {
         console.error("❌ Erreur lors de l'envoi :", error);
     }
 
-    // 3. Suite de ton code (Confirmation, email, etc.)
+    // 5. Affichage de la confirmation
     hideAllViews(); 
     ui.searchSection.classList.add('hidden');
     document.getElementById('conf-name').innerText = name;
     document.getElementById('order-number').innerText = orderId;
     views.confirmation.classList.remove('hidden');
     
+    // 6. On vide le panier
     cart = []; 
     updateCartUI(); 
     document.getElementById('checkout-form').reset();
-}
-
-function envoyerEmailConfirmation(nom, email, orderId, htmlRecap, total) {
-    emailjs.send('service_lrtfieb', 'template_0p0rev9', { client_name: nom, client_email: email, order_id: orderId, recap_html: htmlRecap, total_commande: total })
-        .then(() => console.log('✅ Email envoyé !'), (err) => customAlert('Erreur EmailJS : ' + err.text));
-}
+};
 
 // ==========================================
 // 7. ZOOM IMAGE (LIGHTBOX)
@@ -343,11 +380,11 @@ window.closeImageModal = function() { document.getElementById('image-modal').sty
 document.getElementById('image-modal').addEventListener('click', function(e) { if (e.target === this) closeImageModal(); });
 
 // ==========================================
-// 8. TABLEAU DE BORD ADMIN
+// 8. TABLEAU DE BORD ADMIN (100% CLOUD)
 // ==========================================
 function showAdminPage() {
     hideAllViews(); ui.searchSection.classList.add('hidden'); views.admin.classList.remove('hidden');
-    switchAdminTab('tab-commandes'); // Ouvre par défaut l'onglet commande
+    switchAdminTab('tab-commandes'); 
 }
 
 window.switchAdminTab = function(tabId) {
@@ -359,11 +396,14 @@ window.switchAdminTab = function(tabId) {
 
     if (tabId === 'tab-prix') loadAdminPrices();
     if (tabId === 'tab-commandes') loadAdminOrders();
-    if (tabId === 'tab-finances') { renderExpenses(); initCharts(); }
+    if (tabId === 'tab-finances') { 
+        renderExpenses(); 
+        window.updateDashboardStats();
+    }
     if (tabId === 'tab-suggestions') renderSuggestions();
 };
 
-// --- GESTION DES PRIX ---
+// --- GESTION DES PRIX CLOUD ---
 window.loadAdminPrices = function() {
     let cat = document.getElementById('admin-cat-select').value;
     let tbody = document.getElementById('admin-price-list'); tbody.innerHTML = ''; 
@@ -378,34 +418,26 @@ window.applyBulkIncrease = function() {
     
     document.querySelectorAll('.admin-price-input').forEach(input => { 
         let newVal = parseFloat(input.value) + increaseVal;
-        if(newVal < 0) newVal = 0; // Empêche un prix de passer en dessous de 0€
+        if(newVal < 0) newVal = 0; 
         input.value = newVal.toFixed(2); 
     });
-    customAlert(`Ajustement de ${increaseVal > 0 ? '+' : ''}${increaseVal}€ appliqué à l'écran !`);
+    customAlert(`Ajustement de ${increaseVal > 0 ? '+' : ''}${increaseVal}€ appliqué à l'écran ! Cliquez sur Sauvegarder.`);
 };
 
-window.saveNewPrices = function() {
+window.saveNewPrices = async function() {
     document.querySelectorAll('.admin-price-input').forEach(input => {
         let p = products.find(prod => prod.id === parseInt(input.getAttribute('data-id')));
         if(p) p.price = parseFloat(input.value);
     });
-    let csvContent = "ID;Categorie;Nom;Description;PrixCoutant;PrixVente;NomPhoto\n";
-    products.forEach(p => csvContent += `${p.id};${p.cat};${p.name};${p.desc};${p.priceCost};${p.price};${p.img.split('/').pop()}\n`);
     
-    let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "catalogue_dfs.csv";
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    customAlert("✅ Fichier généré ! Remplacez l'ancien catalogue_dfs.csv par celui-ci.");
+    // NOUVEAU : On sauvegarde les prix modifiés dans Firebase au lieu de créer un CSV
+    for (let p of products) {
+        await window.setDoc(window.doc(window.db, "prices", p.id.toString()), { price: p.price });
+    }
+    customAlert("✅ Nouveaux prix sauvegardés !");
 };
 
-// --- GESTION DES COMMANDES ---
-let adminOrders = [
-    { id: 'LBS-84092', client: 'Jean Dupont', email: 'jean@dupont.com', phone: '06 12 34 56 78', date: '22/06/2026', total: 145.00, status: 'pending', items: '2x Camel Bleu, 1x Whisky' },
-    { id: 'LBS-55410', client: 'Marc Dubois', email: 'marc.dubois@mail.com', phone: '07 88 99 00 11', date: '22/06/2026', total: 320.00, status: 'progress', items: '4x Marlboro Red, 2x Tabac Ajja' },
-    { id: 'LBS-30291', client: 'Marie L.', email: 'marie.l@mail.com', phone: 'Non renseigné', date: '21/06/2026', total: 80.50, status: 'delivered', items: '1x Marlboro Gold' }
-];
-let currentEditingOrderId = null;
-
+// --- GESTION DES COMMANDES CLOUD ---
 function loadAdminOrders() {
     const tbody = document.getElementById('admin-orders-list'); tbody.innerHTML = '';
     adminOrders.forEach(order => {
@@ -425,7 +457,7 @@ window.openOrderModal = function(orderId) {
     document.getElementById('om-title').innerText = `Commande ${order.id}`;
     document.getElementById('om-content').innerHTML = `
         <div class="order-detail-line"><span>Client :</span> <strong>${order.client}</strong></div>
-        <div class="order-detail-line"><span>Contact :</span> <div style="text-align:right"><strong>${order.email}</strong><br><small style="color:#666;">${order.phone}</small></div></div>
+        <div class="order-detail-line"><span>Contact :</span> <div style="text-align:right"><strong>${order.email}</strong></div></div>
         <div class="order-detail-line"><span>Date :</span> <strong>${order.date}</strong></div>
         <div class="order-detail-line"><span>Total :</span> <strong style="color:var(--lux-blue); font-size:1.2rem;">${order.total.toFixed(2)} €</strong></div>
         <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Contenu :</strong><br>${order.items}</div>`;
@@ -433,17 +465,19 @@ window.openOrderModal = function(orderId) {
     document.getElementById('order-modal').classList.remove('hidden');
 };
 window.closeOrderModal = function() { document.getElementById('order-modal').classList.add('hidden'); };
-window.saveOrderStatus = function() {
+
+window.saveOrderStatus = async function() {
     const order = adminOrders.find(o => o.id === currentEditingOrderId);
-    if(order) { order.status = document.getElementById('om-status').value; loadAdminOrders(); closeOrderModal(); }
+    if(order) { 
+        order.status = document.getElementById('om-status').value; 
+        // NOUVEAU : Met à jour le statut dans Firebase
+        await window.setDoc(window.doc(window.db, "orders", order.id), order);
+        loadAdminOrders(); 
+        closeOrderModal(); 
+    }
 };
 
-// --- GESTION DES FINANCES & FACTURES ---
-let expensesList = [
-    { id: 1, name: "Achat gros volume DFS", amount: 820.00, date: "21/06/2026" },
-    { id: 2, name: "Plein d'essence Total", amount: 45.00, date: "20/06/2026" }
-];
-
+// --- GESTION DES FINANCES & FACTURES CLOUD ---
 function renderExpenses() {
     const ul = document.getElementById('expenses-list');
     ul.innerHTML = '';
@@ -460,6 +494,7 @@ function renderExpenses() {
             </li>`);
     });
     document.getElementById('expense-amount-total').innerText = `- ${total.toFixed(2)} €`;
+    window.updateDashboardStats();
 }
 
 window.addExpense = function() {
@@ -468,7 +503,7 @@ window.addExpense = function() {
     document.getElementById('expense-modal').classList.remove('hidden');
 };
 
-window.validateExpense = function() {
+window.validateExpense = async function() {
     let name = document.getElementById('expense-name-input').value;
     let amount = parseFloat(document.getElementById('expense-amount-input').value.replace(',', '.'));
     
@@ -477,51 +512,271 @@ window.validateExpense = function() {
         return;
     }
     
-    let today = new Date().toLocaleDateString('fr-FR');
-    expensesList.unshift({ id: Date.now(), name: name, amount: amount, date: today });
+    let newExp = { id: Date.now(), name: name, amount: amount, date: new Date().toLocaleDateString('fr-FR') };
+    
+    // NOUVEAU : Sauvegarde la dépense dans Firebase
+    await window.setDoc(window.doc(window.db, "expenses", newExp.id.toString()), newExp);
+    
+    expensesList.unshift(newExp);
     renderExpenses();
     document.getElementById('expense-modal').classList.add('hidden');
     customAlert("✅ Facture ajoutée au bilan !");
 };
 
-window.deleteExpense = function(id) {
+window.deleteExpense = async function(id) {
+    // NOUVEAU : Supprime la dépense de Firebase
+    await window.deleteDoc(window.doc(window.db, "expenses", id.toString()));
+    
     expensesList = expensesList.filter(exp => exp.id !== id);
     renderExpenses();
 };
-
-// --- GRAPHIQUES (CHART.JS) ---
-let chartsLoaded = false;
-function initCharts() {
-    if (chartsLoaded) return;
-    chartsLoaded = true;
-
-    const ctxPie = document.getElementById('salesPieChart').getContext('2d');
-    new Chart(ctxPie, {
-        type: 'doughnut',
-        data: {
-            labels: ['Cigarettes', 'Tabac', 'Alcools', 'Cigares'],
-            datasets: [{ data: [65, 20, 10, 5], backgroundColor: ['#0b1d3a', '#d4af37', '#10b981', '#881337'], borderWidth: 0 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
-
-    const ctxBar = document.getElementById('revenueBarChart').getContext('2d');
-    new Chart(ctxBar, {
-        type: 'bar',
-        data: {
-            labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-            datasets: [{ label: 'Revenus (€)', data: [120, 190, 80, 250, 320, 410, 150], backgroundColor: '#d4af37', borderRadius: 5 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
-}
 
 function renderSuggestions() {
     const tbody = document.getElementById('admin-suggestions-list');
     tbody.innerHTML = suggestions.map(s => `<tr><td>${s.name}</td><td>${s.date}</td></tr>`).join('');
 }
 
-// --- ALERTES SUR MESURE ---
+
+window.updateDashboardStats = function() {
+    // 1. Calcul de l'argent qui rentre (Commandes livrées ou en cours)
+    let totalCA = 0;
+    adminOrders.forEach(o => {
+        if (o.status === 'delivered' || o.status === 'progress') {
+            totalCA += o.total;
+        }
+    });
+
+    // 2. Calcul de l'argent qui sort (Factures / Dépenses)
+    let totalExp = 0;
+    expensesList.forEach(e => {
+        totalExp += e.amount;
+    });
+
+    // 3. Calcul du bénéfice
+    let profit = totalCA - totalExp;
+
+    // 4. Affichage sur le site
+    const caEl = document.getElementById('dashboard-revenue');
+    const profEl = document.getElementById('dashboard-profit');
+    
+    if (caEl) caEl.innerText = totalCA.toFixed(2) + ' €';
+    if (profEl) {
+        profEl.innerText = profit.toFixed(2) + ' €';
+        // Petit bonus : si le bénéfice est négatif, on le met en rouge !
+        profEl.style.color = profit >= 0 ? '#d4af37' : '#dc3545';
+    }
+};
+
+// ==========================================
+// --- GRAPHIQUES & STATISTIQUES AVANCÉS ---
+// ==========================================
+
+let salesChartInstance = null;
+let revenueChartInstance = null;
+
+// 1. Calcul des statistiques globales et pourcentages
+window.updateDashboardStats = function() {
+    let totalCA = 0;
+    let totalExp = 0;
+    let currentMonthCA = 0;
+    let lastMonthCA = 0;
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Analyse des commandes
+    adminOrders.forEach(o => {
+        if (o.status === 'delivered' || o.status === 'progress') {
+            totalCA += o.total; // Total absolu
+
+            // Découpage de la date pour les tendances
+            let parts = o.date.split('/');
+            if (parts.length === 3) {
+                let m = parseInt(parts[1]) - 1;
+                let y = parseInt(parts[2]);
+                
+                if (m === currentMonth && y === currentYear) {
+                    currentMonthCA += o.total;
+                } else if (m === (currentMonth === 0 ? 11 : currentMonth - 1) && y === (currentMonth === 0 ? currentYear - 1 : currentYear)) {
+                    lastMonthCA += o.total;
+                }
+            }
+        }
+    });
+
+    // Analyse des dépenses
+    expensesList.forEach(e => totalExp += e.amount);
+    let profit = totalCA - totalExp;
+
+    // Calcul de la tendance (Flèches)
+    let trendHTML = '';
+    if (lastMonthCA > 0) {
+        let pct = ((currentMonthCA - lastMonthCA) / lastMonthCA) * 100;
+        trendHTML = pct >= 0 ? `↗ +${pct.toFixed(1)}% ce mois` : `↘ ${pct.toFixed(1)}% ce mois`;
+    } else if (currentMonthCA > 0) {
+        trendHTML = `↗ +100% ce mois`;
+    } else {
+        trendHTML = `~ 0% ce mois`;
+    }
+
+    // Affichage des chiffres
+    const caEl = document.getElementById('dashboard-revenue');
+    const profEl = document.getElementById('dashboard-profit');
+    const trends = document.querySelectorAll('.f-trend');
+    
+    if (caEl) caEl.innerText = totalCA.toFixed(2) + ' €';
+    if (profEl) {
+        profEl.innerText = profit.toFixed(2) + ' €';
+        profEl.style.color = profit >= 0 ? '#d4af37' : '#dc3545';
+    }
+    if (trends.length >= 2) {
+        let trendClass = trendHTML.includes('↗') ? 'text-green' : (trendHTML.includes('↘') ? 'text-red' : '');
+        trends[0].innerText = trendHTML;
+        trends[0].className = 'f-trend ' + trendClass;
+        trends[1].innerText = trendHTML;
+        trends[1].className = 'f-trend ' + trendClass;
+    }
+
+    // Mise à jour des graphiques dans la foulée
+    window.updateCharts();
+};
+
+// 2. Génération des graphiques (Avec Filtre de Temps et Bénéfice de la période)
+window.updateCharts = function() {
+    const barCanvas = document.getElementById('revenueBarChart');
+    const pieCanvas = document.getElementById('salesPieChart');
+    
+    // SÉCURITÉ : Si l'un des graphiques a disparu du HTML, on arrête tout sans faire planter le site !
+    if (!barCanvas || !pieCanvas) return; 
+
+    const periodVal = document.getElementById('chart-period-filter') ? document.getElementById('chart-period-filter').value : '7';
+    const now = new Date();
+    now.setHours(0,0,0,0);
+
+    let labels = [];
+    let revData = [];
+
+    // NOUVEAU : Variables pour calculer le bénéfice exact de la période
+    let periodTotalRevenue = 0;
+    let periodTotalExpenses = 0;
+
+    // A. Préparation de l'axe des temps (Barres)
+    if (periodVal !== 'all') {
+        let days = parseInt(periodVal);
+        for (let i = days - 1; i >= 0; i--) {
+            let d = new Date(now);
+            d.setDate(now.getDate() - i);
+            labels.push(d.toLocaleDateString('fr-FR'));
+            revData.push(0);
+        }
+    } else {
+        // "Depuis toujours" : On regroupe toutes les dates existantes
+        let uniqueDates = new Set();
+        adminOrders.forEach(o => { if(o.status === 'delivered' || o.status === 'progress') uniqueDates.add(o.date); });
+        labels = Array.from(uniqueDates).sort((a,b) => {
+            let da = a.split('/'); let db = b.split('/');
+            return new Date(da[2], da[1]-1, da[0]) - new Date(db[2], db[1]-1, db[0]);
+        });
+        revData = new Array(labels.length).fill(0);
+    }
+
+    let pieTotals = { 'Cigarettes': 0, 'Tabac': 0, 'Alcool': 0, 'Cigares': 0 };
+
+    // B. Remplissage des données avec les vraies commandes
+    adminOrders.forEach(o => {
+        if (o.status !== 'delivered' && o.status !== 'progress') return;
+
+        let idx = labels.indexOf(o.date);
+        
+        // Si la commande fait partie de la période sélectionnée
+        if (idx !== -1 || periodVal === 'all') {
+            if (idx !== -1) revData[idx] += o.total;
+            
+            // NOUVEAU : On ajoute au CA de la période
+            periodTotalRevenue += o.total;
+
+            // Analyse du Camembert
+            if (o.items) {
+                let itemsList = o.items.split(', ');
+                itemsList.forEach(itemStr => {
+                    let match = itemStr.match(/(.*) \(x(\d+)\)/);
+                    if (match) {
+                        let name = match[1].trim();
+                        let qty = parseInt(match[2]);
+                        let prod = products.find(p => p.name === name);
+                        if (prod) {
+                            let cat = prod.cat === 'Alcools' ? 'Alcool' : prod.cat;
+                            if (pieTotals[cat] !== undefined) pieTotals[cat] += (prod.price * qty);
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    // NOUVEAU : Calcul des dépenses (factures) de la même période
+    expensesList.forEach(e => {
+        if (periodVal === 'all' || labels.indexOf(e.date) !== -1) {
+            periodTotalExpenses += e.amount;
+        }
+    });
+
+    // NOUVEAU : Mise à jour de l'affichage du bénéfice de la période à l'écran
+    let periodProfit = periodTotalRevenue - periodTotalExpenses;
+    let profitEl = document.getElementById('period-profit-val');
+    if (profitEl) {
+        profitEl.innerText = periodProfit.toFixed(2) + ' €';
+        profitEl.style.color = periodProfit >= 0 ? '#10b981' : '#dc3545'; // Vert si positif, rouge si négatif
+    }
+
+    // C. Affichage Barres
+    const ctxBar = document.getElementById('revenueBarChart').getContext('2d');
+    let displayLabels = labels.map(l => l.substring(0, 5)); // On affiche "JJ/MM"
+    if (revenueChartInstance) {
+        revenueChartInstance.data.labels = displayLabels;
+        revenueChartInstance.data.datasets[0].data = revData;
+        revenueChartInstance.update();
+    } else {
+        revenueChartInstance = new Chart(ctxBar, {
+            type: 'bar',
+            data: { labels: displayLabels, datasets: [{ label: 'Revenus (€)', data: revData, backgroundColor: '#d4af37', borderRadius: 5 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // D. Affichage Camembert (Avec sécurité "Zéro")
+    const ctxPie = document.getElementById('salesPieChart').getContext('2d');
+    let pieDataArr = [pieTotals['Cigarettes'], pieTotals['Tabac'], pieTotals['Alcool'], pieTotals['Cigares']];
+    let isZero = pieDataArr.every(v => v === 0);
+    let bgColors = isZero ? ['#e0e0e0', '#e0e0e0', '#e0e0e0', '#e0e0e0'] : ['#0b1d3a', '#d4af37', '#10b981', '#881337'];
+    let displayData = isZero ? [1, 1, 1, 1] : pieDataArr;
+
+    if (salesChartInstance) {
+        salesChartInstance.data.datasets[0].data = displayData;
+        salesChartInstance.data.datasets[0].backgroundColor = bgColors;
+        salesChartInstance.update();
+    } else {
+        salesChartInstance = new Chart(ctxPie, {
+            type: 'doughnut',
+            data: { labels: ['Cigarettes', 'Tabac', 'Alcools', 'Cigares'], datasets: [{ data: displayData, backgroundColor: bgColors, borderWidth: 0 }] },
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                plugins: { tooltip: { callbacks: { label: function(c) { return isZero ? "Aucune vente" : c.label + ': ' + c.raw.toFixed(2) + ' €'; } } } }
+            }
+        });
+    }
+};
+
+// ==========================================
+// --- OUTILS ET ALERTES ---
+// ==========================================
+
+function renderSuggestions() {
+    const tbody = document.getElementById('admin-suggestions-list');
+    tbody.innerHTML = suggestions.map(s => `<tr><td>${s.name}</td><td>${s.date}</td></tr>`).join('');
+}
+
 window.customAlert = function(msg) {
     document.getElementById('custom-alert-text').innerText = msg;
     document.getElementById('custom-alert-modal').classList.remove('hidden');
@@ -530,3 +785,13 @@ window.closeCustomAlert = function() {
     document.getElementById('custom-alert-modal').classList.add('hidden');
 };
 
+// --- ENVOI D'E-MAIL (EMAILJS) ---
+function envoyerEmailConfirmation(nom, email, orderId, htmlRecap, total) {
+    emailjs.send('service_lrtfieb', 'template_0p0rev9', { 
+        client_name: nom, 
+        client_email: email, 
+        order_id: orderId, 
+        recap_html: htmlRecap, 
+        total_commande: total 
+    }).then(() => console.log('✅ Email envoyé !')).catch((err) => console.error(err));
+}
