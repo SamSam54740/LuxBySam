@@ -140,15 +140,21 @@ header { background: white; position: sticky; top: 0; z-index: 1000; box-shadow:
 .glass-card:hover .gc-glow { opacity: 0.5; }
 .glass-card:hover .gc-icon { transform: scale(1.1); }
 
-/* Effet "Hover" automatique sur mobile lors du défilement */
+/* Effet "Hover" automatique ULTRA FLASHY sur mobile */
 .glass-card.mobile-hover {
-    transform: translateY(-10px);
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+    transform: translateY(-10px) scale(1.05); /* Effet de zoom en plus */
+    border-color: var(--lux-blue); /* Bordure qui s'illumine en bleu */
+    background: rgba(0, 163, 224, 0.15); /* Fond subtilement bleuté */
+    box-shadow: 0 0 25px rgba(0, 163, 224, 0.5), inset 0 0 15px rgba(0, 163, 224, 0.2); /* Halo lumineux néon */
 }
-.glass-card.mobile-hover .gc-glow { opacity: 0.5; }
-.glass-card.mobile-hover .gc-icon { transform: scale(1.1); }
+.glass-card.mobile-hover .gc-glow { 
+    opacity: 1; 
+    background: var(--lux-blue); 
+    filter: blur(40px); /* Flash de lumière plus net derrière l'icône */
+}
+.glass-card.mobile-hover .gc-icon { 
+    transform: scale(1.25) rotate(-5deg); /* L'icône grossit et penche légèrement */
+}
 
 /* --- LISTE PRODUITS --- */
 .products-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--border-gray); padding-bottom: 15px; flex-wrap: wrap; gap: 15px;}
@@ -356,9 +362,80 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
     .order-modal-box { padding: 20px; width: 95%; max-height: 90vh; overflow-y: auto; }
 }
 
+/* Tablette : 3 colonnes pour utiliser l'espace */
 @media screen and (max-width: 1024px) {
-    .products-list { grid-template-columns: repeat(2, 1fr); }
+    .products-list { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* Téléphone : 2 colonnes + Boutons géants */
 @media screen and (max-width: 768px) {
-    .products-list { grid-template-columns: 1fr; }
+    /* 1. On force la grille à 2 colonnes au lieu de 1 */
+    .products-list { 
+        grid-template-columns: repeat(2, 1fr) !important; 
+        gap: 12px; /* On réduit un peu l'espace entre les cartes */
+    }
+    
+    /* 2. On affine la carte pour que tout rentre parfaitement */
+    .product-card { padding: 12px; }
+    .card-image-wrapper { height: 110px; margin-bottom: 10px; }
+    .product-card h3 { font-size: 0.85rem; margin-bottom: 5px; line-height: 1.2; }
+    .prod-desc { font-size: 0.70rem; margin-bottom: 10px; line-height: 1.3; }
+    
+    /* 3. La magie du Bouton géant */
+    .price-row { 
+        flex-direction: column; /* Met le prix au-dessus du bouton */
+        gap: 8px; 
+        align-items: stretch; /* Étire le bouton sur toute la largeur ! */
+    }
+    .final-price { 
+        font-size: 1.15rem; 
+        text-align: center; /* Centre le prix */
+    }
+    .btn-add { 
+        padding: 12px 10px; /* Plus haut pour un confort de clic maximal */
+        font-size: 1rem; 
+        border-radius: 10px; /* Look un peu plus arrondi et moderne */
+        width: 100%; /* Prend 100% de la largeur dispo */
+    }
+    /* CORRECTION BARRE DU HAUT (HEADER) */
+    .header-right { gap: 5px; } /* On réduit l'espace entre les boutons */
+    .logo { font-size: 1.2rem; } /* On réduit un peu le logo */
+    
+    /* On rend les boutons Admin très compacts */
+    #nav-admin-btn, #nav-lock-btn { 
+        padding: 6px 8px; 
+        font-size: 0.7rem; 
+        border-width: 1px;
+    }
+    
+    /* On affine le bouton Panier */
+    .cart-icon { 
+        padding: 6px 10px; 
+        font-size: 0.8rem; 
+    }
+    /* CORRECTION DU TABLEAU ADMIN (Scroll horizontal propre) */
+    .table-responsive { 
+        width: 100%; 
+        overflow-x: auto; /* Permet de glisser avec le doigt */
+        -webkit-overflow-scrolling: touch; /* Rend le glissement fluide sur iPhone */
+        padding-bottom: 15px;
+    }
+    
+    .admin-table { 
+        display: table; /* Force le comportement strict de tableau */
+        min-width: 650px; /* Force le tableau à rester large, créant le scroll horizontal */
+    }
+    
+    /* On interdit au texte de passer sur 2 lignes et on réduit la taille */
+    .admin-table th, .admin-table td { 
+        white-space: nowrap !important; 
+        font-size: 0.85rem;
+        padding: 10px;
+    }
+    
+    /* On affine le petit bouton "Gérer" */
+    .admin-table td button { 
+        padding: 5px 10px; 
+        font-size: 0.75rem; 
+    }
 }
