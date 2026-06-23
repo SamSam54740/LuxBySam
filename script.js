@@ -326,17 +326,21 @@ window.handleCheckout = async function(e) {
     e.preventDefault();
     const name = document.getElementById('client-name').value;
     const email = document.getElementById('client-email').value;
+    
+    // NOUVEAU : On récupère le téléphone s'il a été rempli
+    const phoneInput = document.getElementById('client-phone');
+    const phoneVal = phoneInput ? phoneInput.value : ''; 
+
     const orderId = 'LBS-' + Math.floor(10000 + Math.random() * 90000);
     let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0).toFixed(2);
     
-    // 1. On prépare le reçu HTML pour l'e-mail
     let htmlRecap = cart.map(item => `<li>${item.name} (x${item.qty}) - ${(item.price * item.qty).toFixed(2)} €</li>`).join('');
 
-    // 2. Préparation des données pour Firebase
     const commandeData = {
-        id: orderId, // <-- On utilise "id" pour coller à l'admin
+        id: orderId,
         client: name,
         email: email,
+        phone: phoneVal, // <-- On sauvegarde le téléphone ici dans le Cloud !
         total: parseFloat(total),
         date: new Date().toLocaleDateString('fr-FR'),
         status: 'pending',
@@ -344,26 +348,20 @@ window.handleCheckout = async function(e) {
     };
 
     try {
-        // 3. Envoi vers Firestore
         await window.setDoc(window.doc(window.db, "orders", orderId), commandeData);
-        adminOrders.unshift(commandeData); // Mise à jour locale pour l'admin
+        adminOrders.unshift(commandeData);
         console.log("✅ Commande envoyée sur le Cloud !");
-        
-        // 4. Envoi de l'e-mail via EmailJS
         envoyerEmailConfirmation(name, email, orderId, `<ul>${htmlRecap}</ul>`, total);
-
     } catch (error) {
         console.error("❌ Erreur lors de l'envoi :", error);
     }
 
-    // 5. Affichage de la confirmation
     hideAllViews(); 
     ui.searchSection.classList.add('hidden');
     document.getElementById('conf-name').innerText = name;
     document.getElementById('order-number').innerText = orderId;
     views.confirmation.classList.remove('hidden');
     
-    // 6. On vide le panier
     cart = []; 
     updateCartUI(); 
     document.getElementById('checkout-form').reset();
@@ -454,16 +452,67 @@ window.openOrderModal = function(orderId) {
     const order = adminOrders.find(o => o.id === orderId);
     if(!order) return;
     currentEditingOrderId = orderId;
+    
+    // --- Formatage visuel avec PHOTOS ---
+    let itemsHTML = '';
+    if (order.items) {
+        let itemsList = order.items.split(', ');
+        itemsHTML = '<ul style="list-style: none; padding: 0; margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">';
+        
+        itemsList.forEach(itemStr => {
+            let match = itemStr.match(/(.*) \(x(\d+)\)/);
+            if (match) {
+                let name = match[1].trim();
+                let qty = match[2];
+                
+                // NOUVEAU : On cherche la photo du produit dans le catalogue
+                let prod = products.find(p => p.name === name);
+                let imgHtml = prod ? `<img src="${prod.img}" style="width: 35px; height: 35px; object-fit: contain; border-radius: 4px; margin-right: 12px; background: white; border: 1px solid #eee;">` : '';
+
+                itemsHTML += `
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="display: flex; align-items: center;">
+                        ${imgHtml}
+                        <span style="font-weight: 600; color: #1a1a1a; font-size: 0.85rem; line-height: 1.1;">${name}</span>
+                    </div>
+                    <span style="background: var(--lux-blue); color: white; padding: 3px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem;">x${qty}</span>
+                </li>`;
+            } else {
+                itemsHTML += `<li style="font-size: 0.85rem;">${itemStr}</li>`;
+            }
+        });
+        itemsHTML += '</ul>';
+    }
+
+    // NOUVEAU : Gestion du numéro de téléphone (S'il est vide, on affiche "Non renseigné")
+    let phoneDisplay = order.phone ? order.phone : '<span style="color:#999; font-style:italic;">Non renseigné</span>';
+
     document.getElementById('om-title').innerText = `Commande ${order.id}`;
+    
+    // NOUVEAU : Design beaucoup plus compact (marges réduites, textes plus petits)
     document.getElementById('om-content').innerHTML = `
-        <div class="order-detail-line"><span>Client :</span> <strong>${order.client}</strong></div>
-        <div class="order-detail-line"><span>Contact :</span> <div style="text-align:right"><strong>${order.email}</strong></div></div>
-        <div class="order-detail-line"><span>Date :</span> <strong>${order.date}</strong></div>
-        <div class="order-detail-line"><span>Total :</span> <strong style="color:var(--lux-blue); font-size:1.2rem;">${order.total.toFixed(2)} €</strong></div>
-        <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Contenu :</strong><br>${order.items}</div>`;
+        <div style="font-size: 0.9rem;">
+            <div class="order-detail-line" style="padding: 6px 0;"><span>Client :</span> <strong>${order.client}</strong></div>
+            <div class="order-detail-line" style="padding: 6px 0;">
+                <span>Contact :</span> 
+                <div style="text-align:right">
+                    <strong>${order.email}</strong><br>
+                    <small style="font-size: 0.8rem;">${phoneDisplay}</small>
+                </div>
+            </div>
+            <div class="order-detail-line" style="padding: 6px 0;"><span>Date :</span> <strong>${order.date}</strong></div>
+            <div class="order-detail-line" style="padding: 6px 0;"><span>Total :</span> <strong style="color:var(--lux-blue); font-size:1.1rem;">${order.total.toFixed(2)} €</strong></div>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 10px; background: #f4f7f6; border-radius: 10px; border: 1px solid #eee; max-height: 220px; overflow-y: auto;">
+            <strong style="color: #666; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">🛒 À acheter :</strong>
+            ${itemsHTML}
+        </div>`;
+        
     document.getElementById('om-status').value = order.status;
     document.getElementById('order-modal').classList.remove('hidden');
 };
+
 window.closeOrderModal = function() { document.getElementById('order-modal').classList.add('hidden'); };
 
 window.saveOrderStatus = async function() {
@@ -800,21 +849,35 @@ function envoyerEmailConfirmation(nom, email, orderId, htmlRecap, total) {
 // --- OPTIMISATIONS MOBILE (SCROLL HOVER) ---
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // On n'active cet effet que sur les petits écrans (téléphones)
+    // Uniquement sur téléphone
     if (window.innerWidth <= 768) {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                // Si la carte est à plus de 50% visible à l'écran
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('mobile-hover');
-                } else {
-                    entry.target.classList.remove('mobile-hover');
+        const cards = document.querySelectorAll('.glass-card');
+        
+        window.addEventListener('scroll', () => {
+            let closestCard = null;
+            let minDistance = Infinity;
+            // On calcule exactement le milieu de l'écran du téléphone
+            const centerY = window.innerHeight / 2; 
+
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardCenter = rect.top + (rect.height / 2);
+                const distance = Math.abs(centerY - cardCenter);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestCard = card;
                 }
             });
-        }, { threshold: 0.5 }); // 0.5 = déclenchement au milieu de l'écran
 
-        document.querySelectorAll('.glass-card').forEach(card => {
-            observer.observe(card);
+            // On allume UNIQUEMENT la carte la plus proche (si elle est à moins de 150px du centre)
+            cards.forEach(card => {
+                if (card === closestCard && minDistance < 150) {
+                    card.classList.add('mobile-hover');
+                } else {
+                    card.classList.remove('mobile-hover');
+                }
+            });
         });
     }
 });
