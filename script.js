@@ -795,3 +795,26 @@ function envoyerEmailConfirmation(nom, email, orderId, htmlRecap, total) {
         total_commande: total 
     }).then(() => console.log('✅ Email envoyé !')).catch((err) => console.error(err));
 }
+
+// ==========================================
+// --- OPTIMISATIONS MOBILE (SCROLL HOVER) ---
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // On n'active cet effet que sur les petits écrans (téléphones)
+    if (window.innerWidth <= 768) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                // Si la carte est à plus de 50% visible à l'écran
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('mobile-hover');
+                } else {
+                    entry.target.classList.remove('mobile-hover');
+                }
+            });
+        }, { threshold: 0.5 }); // 0.5 = déclenchement au milieu de l'écran
+
+        document.querySelectorAll('.glass-card').forEach(card => {
+            observer.observe(card);
+        });
+    }
+});
