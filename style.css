@@ -307,34 +307,53 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
     border-color: var(--lux-red) !important;
     color: var(--lux-red) !important;
 }
-
 /* =========================================
-   📱 OPTIMISATIONS SMARTPHONE
+   📱 OPTIMISATIONS SMARTPHONE (Version propre et nettoyée)
 ========================================= */
 @media screen and (max-width: 768px) {
-    /* 1. L'ACCUEIL */
+    /* --- 1. HEADER & NAVIGATION --- */
+    .header-flex { padding: 10px 0; }
+    .logo { font-size: 1.2rem; }
+    .header-right { gap: 5px; flex-wrap: nowrap !important; }
+    
+    .hide-mobile { display: none !important; }
+    
+    #nav-admin-btn, #nav-lock-btn, .cart-icon {
+        padding: 8px 10px;
+        font-size: 1.2rem; /* Taille des emojis */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Le texte Mon Panier forcé en tout petit */
+    .cart-text {
+        font-size: 0.75rem !important;
+        margin-left: 5px !important;
+        font-weight: 600 !important;
+    }
+
+    /* --- 2. ACCUEIL ET PRODUITS --- */
     .immersive-home { padding: 30px 15px 40px 15px; margin-top: 10px; }
     .vip-header h2 { font-size: 1.8rem; }
-    .glass-grid { grid-template-columns: 1fr; }
-    .header-flex { padding: 10px 0; }
-    .logo { font-size: 1.5rem; }
-    .cart-icon { padding: 8px 12px; font-size: 0.9rem; }
     .search-wrapper { border-radius: 15px; }
     .products-header { flex-direction: column; align-items: flex-start; gap: 15px; }
     .ph-right { width: 100%; }
     #sort-select { width: 100%; margin-top: 5px; }
 
-    /* 2. LE PANIER (Version Ultra-plate avec +/- sous le prix total) */
-    .cart-item-row { 
-        display: grid;
-        grid-template-columns: 50px 1fr auto; /* Image(gauche) | Nom(centre) | Prix et Boutons(droite) */
-        grid-template-rows: auto auto; 
-        gap: 2px 10px;
-        padding: 10px;
-        align-items: center;
+    .products-list {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px;
     }
-    
-    /* 2. LE PANIER (Ultra-plat et forcé sur Mobile) */
+    .product-card { padding: 12px; }
+    .card-image-wrapper { height: 110px; margin-bottom: 10px; }
+    .product-card h3 { font-size: 0.85rem; margin-bottom: 5px; line-height: 1.2; }
+    .prod-desc { font-size: 0.70rem; margin-bottom: 10px; line-height: 1.3; }
+    .price-row { flex-direction: column; gap: 8px; align-items: stretch; }
+    .final-price { font-size: 1.15rem; text-align: center; }
+    .btn-add { padding: 12px 10px; font-size: 1rem; border-radius: 10px; width: 100%; }
+
+    /* --- 3. LE PANIER (Ultra-plat et parfait) --- */
     .cart-item-row { 
         display: grid !important;
         grid-template-columns: 50px 1fr auto !important; 
@@ -351,6 +370,7 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
         grid-column: 1 !important; 
         grid-row: 1 / 3 !important;
         margin: 0 !important; 
+        position: static !important; /* Annule l'ancien bug */
     }
     
     .ci-details { 
@@ -359,12 +379,11 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
+        align-items: flex-start !important;
     }
-    
     .ci-details strong { font-size: 0.8rem !important; line-height: 1.2 !important; }
     .ci-price-u { font-size: 0.75rem !important; }
     
-    /* LE PRIX TOTAL : Forcé à s'afficher en haut à droite */
     .ci-total { 
         position: static !important; 
         display: block !important;
@@ -373,11 +392,12 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
         font-size: 1rem !important; 
         font-weight: bold !important;
         text-align: right !important;
-        color: var(--lux-blue) !important; /* Un peu de bleu pour qu'il ressorte bien ! */
+        color: var(--lux-blue) !important; 
         margin: 0 !important;
+        top: auto !important; /* Annule l'ancien bug */
+        right: auto !important; /* Annule l'ancien bug */
     }
 
-    /* LE COMPTEUR +/- : Forcé en bas à droite */
     .ci-qty-controls { 
         position: static !important;
         grid-column: 3 !important; 
@@ -389,145 +409,29 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
         width: max-content !important;
         justify-self: end !important; 
     }
-    
-    /* Le prix total tout à droite, bien centré */
-    .ci-total { 
-        position: static; 
-        grid-column: 3; 
-        grid-row: 1 / 3; 
-        font-size: 1rem; 
-        font-weight: bold;
-    }
-    
-    /* Correction du fond gris (Contrôles quantité) */
-    .ci-qty-controls { margin: 15px 0; width: fit-content; justify-content: center; }
-    
-    /* Prix unitaire en haut à droite */
-    .ci-total { position: absolute; top: 20px; right: 20px; width: auto; font-size: 1.1rem; }
 
-    /* Correction du prix Total qui dépasse */
     .total-line { flex-wrap: wrap; gap: 10px; }
-    .total-price { font-size: 1.25rem; word-break: break-all; } /* Empêche le débordement */
-
-    /* Correction Case 18 ans sur une seule ligne */
+    .total-price { font-size: 1.25rem; word-break: break-all; }
     .cart-checkbox { padding: 8px 10px; }
     .cart-checkbox label { font-size: 0.80rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
 
-    /* 3. ESPACE ADMIN (100% Repensé pour mobile) */
-    
-    /* Boutons des menus empilés proprement */
+    /* --- 4. ESPACE ADMIN --- */
     .admin-tabs { flex-wrap: wrap; gap: 8px; border-bottom: none; margin-bottom: 20px; }
     .tab-btn { width: 48%; flex-grow: 1; font-size: 0.85rem; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
     .tab-btn.active { border: 1px solid #0b1d3a; border-bottom: 1px solid #0b1d3a; border-radius: 8px; }
 
-    /* Tableaux : Création d'un défilement horizontal fluide au doigt */
-    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #eee; padding-bottom: 10px; }
-    .admin-table { min-width: 600px; /* Force le tableau à garder sa taille et crée un scroll */ }
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 15px; border: none;}
+    .admin-table { display: table; min-width: 650px; }
+    .admin-table th, .admin-table td { white-space: nowrap !important; font-size: 0.85rem; padding: 10px; }
+    .admin-table td button { padding: 5px 10px; font-size: 0.75rem; }
     
-    /* Cartes Finances empilées */
     .finance-cards { flex-direction: column; gap: 15px; }
     .f-card { width: 100%; margin-bottom: 0; }
     .f-amount { font-size: 1.6rem; }
-
-    /* Modification des Prix de masse (Admin) */
     .pc-row.bulk-edit-box div { flex-wrap: wrap; }
     .pc-row.bulk-edit-box input { width: 100%; margin: 10px 0; }
     .pc-row.bulk-edit-box button { width: 100%; }
-
-    /* Boîtes de dialogue (Modals Admin) adaptées */
     .order-modal-box { padding: 20px; width: 95%; max-height: 90vh; overflow-y: auto; }
-
-        /* 1. On force la grille à 2 colonnes au lieu de 1 */
-    .products-list { 
-        grid-template-columns: repeat(2, 1fr) !important; 
-        gap: 12px; /* On réduit un peu l'espace entre les cartes */
-    }
-    
-    /* 2. On affine la carte pour que tout rentre parfaitement */
-    .product-card { padding: 12px; }
-    .card-image-wrapper { height: 110px; margin-bottom: 10px; }
-    .product-card h3 { font-size: 0.85rem; margin-bottom: 5px; line-height: 1.2; }
-    .prod-desc { font-size: 0.70rem; margin-bottom: 10px; line-height: 1.3; }
-    
-    /* 3. La magie du Bouton géant */
-    .price-row { 
-        flex-direction: column; /* Met le prix au-dessus du bouton */
-        gap: 8px; 
-        align-items: stretch; /* Étire le bouton sur toute la largeur ! */
-    }
-    .final-price { 
-        font-size: 1.15rem; 
-        text-align: center; /* Centre le prix */
-    }
-    .btn-add { 
-        padding: 12px 10px; /* Plus haut pour un confort de clic maximal */
-        font-size: 1rem; 
-        border-radius: 10px; /* Look un peu plus arrondi et moderne */
-        width: 100%; /* Prend 100% de la largeur dispo */
-    }
-    /* CORRECTION BARRE DU HAUT (HEADER) */
-    .header-right { gap: 5px; } /* On réduit l'espace entre les boutons */
-    .logo { font-size: 1.2rem; } /* On réduit un peu le logo */
-    
-    /* On rend les boutons Admin très compacts */
-    #nav-admin-btn, #nav-lock-btn { 
-        padding: 6px 8px; 
-        font-size: 0.7rem; 
-        border-width: 1px;
-    }
-
-    
-    /* On affine le bouton Panier */
-    .cart-icon { 
-        padding: 6px 10px; 
-        font-size: 0.8rem; 
-    }
-    /* CORRECTION DU TABLEAU ADMIN (Scroll horizontal propre) */
-    .table-responsive { 
-        width: 100%; 
-        overflow-x: auto; /* Permet de glisser avec le doigt */
-        -webkit-overflow-scrolling: touch; /* Rend le glissement fluide sur iPhone */
-        padding-bottom: 15px;
-    }
-    
-    .admin-table { 
-        display: table; /* Force le comportement strict de tableau */
-        min-width: 650px; /* Force le tableau à rester large, créant le scroll horizontal */
-    }
-    
-    /* On interdit au texte de passer sur 2 lignes et on réduit la taille */
-    .admin-table th, .admin-table td { 
-        white-space: nowrap !important; 
-        font-size: 0.85rem;
-        padding: 10px;
-    }
-    
-    /* On affine le petit bouton "Gérer" */
-    .admin-table td button { 
-        padding: 5px 10px; 
-        font-size: 0.75rem; 
-    }
-    /* Masquer le texte des boutons du haut sur mobile */
-    .hide-mobile { display: none !important; }
-    
-    /* On s'assure que tout reste sur 1 seule ligne */
-    .header-right { flex-wrap: nowrap !important; }
-    
-    /* On harmonise la taille des icônes carrées */
-    #nav-admin-btn, #nav-lock-btn, .cart-icon {
-        padding: 8px 12px;
-        font-size: 1.2rem; /* Taille de l'icône */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* On réduit spécifiquement le texte "Mon Panier" sans toucher à l'icône ni au badge rouge */
-    .cart-text {
-        font-size: 0.75rem !important;
-        margin-left: 5px !important;
-        font-weight: 600 !important;
-    }
 }
 
 /* Tablette : 3 colonnes pour utiliser l'espace */
