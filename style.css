@@ -303,6 +303,11 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
 .copyright { color: #aaa; margin-bottom: 10px; }
 .flags { font-size: 1.5rem; letter-spacing: 10px;}
 
+#nav-lock-btn {
+    border-color: var(--lux-red) !important;
+    color: var(--lux-red) !important;
+}
+
 /* =========================================
    📱 OPTIMISATIONS SMARTPHONE
 ========================================= */
@@ -360,16 +365,8 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
 
     /* Boîtes de dialogue (Modals Admin) adaptées */
     .order-modal-box { padding: 20px; width: 95%; max-height: 90vh; overflow-y: auto; }
-}
 
-/* Tablette : 3 colonnes pour utiliser l'espace */
-@media screen and (max-width: 1024px) {
-    .products-list { grid-template-columns: repeat(3, 1fr); }
-}
-
-/* Téléphone : 2 colonnes + Boutons géants */
-@media screen and (max-width: 768px) {
-    /* 1. On force la grille à 2 colonnes au lieu de 1 */
+        /* 1. On force la grille à 2 colonnes au lieu de 1 */
     .products-list { 
         grid-template-columns: repeat(2, 1fr) !important; 
         gap: 12px; /* On réduit un peu l'espace entre les cartes */
@@ -438,4 +435,23 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
         padding: 5px 10px; 
         font-size: 0.75rem; 
     }
+    /* Masquer le texte des boutons du haut sur mobile */
+    .hide-mobile { display: none !important; }
+    
+    /* On s'assure que tout reste sur 1 seule ligne */
+    .header-right { flex-wrap: nowrap !important; }
+    
+    /* On harmonise la taille des icônes carrées */
+    #nav-admin-btn, #nav-lock-btn, .cart-icon {
+        padding: 8px 12px;
+        font-size: 1.2rem; /* Taille de l'icône */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Tablette : 3 colonnes pour utiliser l'espace */
+@media screen and (max-width: 1024px) {
+    .products-list { grid-template-columns: repeat(3, 1fr); }
 }

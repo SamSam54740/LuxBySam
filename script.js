@@ -13,6 +13,7 @@ let suggestions = [];
 let adminOrders = [];
 let expensesList = [];
 let currentEditingOrderId = null;
+let isPromoCostActive = false;
 
 // ==========================================
 // 2. INITIALISATION & CHARGEMENT FIREBASE
@@ -107,17 +108,21 @@ async function chargerCatalogue() {
     } catch (erreur) { console.error("❌ Erreur de lecture du CSV.", erreur); }
 }
 
+
 // ==========================================
 // 3. SÉCURITÉ DU PORTAIL DISCRET
 // ==========================================
 document.getElementById('btn-enter').addEventListener('click', () => {
-    const code = document.getElementById('access-code').value.toLowerCase();
+    const rawCode = document.getElementById('access-code').value.trim();
     const isAdult = document.getElementById('age-check').checked;
     
-    if (isAdult && (code === 'lux123' || code === 'admin')) {
-        sessionStorage.setItem('luxbysam_role', code);
-        unlockSite(code);
-        if (code === 'admin') showAdminPage();
+    const secretCode = btoa(rawCode); 
+    
+    if (isAdult && (secretCode === 'bHV4MTIz' || secretCode === 'Tnc0NXVhMjImKg==')) {
+        let role = secretCode === 'Tnc0NXVhMjImKg==' ? 'admin' : 'user';
+        sessionStorage.setItem('luxbysam_role', role); 
+        window.unlockSite(role);
+        if (role === 'admin') window.showAdminPage();
     } else {
         document.getElementById('gate-error').classList.remove('hidden');
     }
@@ -297,6 +302,21 @@ window.addToCart = function(id) {
 
 function showCartPage() { hideAllViews(); ui.searchSection.classList.add('hidden'); views.cart.classList.remove('hidden'); updateCartUI(); }
 
+// --- FONCTION CODE PROMO ---
+window.applyPromoCode = function() {
+    const rawCode = document.getElementById('promo-input').value.toUpperCase().trim();
+    const secretPromo = btoa(rawCode);
+
+    if (secretPromo === 'UFJPTU85OA==') { 
+        isPromoCostActive = true;
+        updateCartUI(); 
+        window.customAlert('✅ Code valide : Prix coûtants activés !');
+    } else {
+        window.customAlert('❌ Code promo invalide.');
+    }
+};
+
+// --- FONCTION PANIER MISE À JOUR ---
 function updateCartUI() {
     document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0);
     const container = document.getElementById('cart-page-items');
@@ -304,14 +324,39 @@ function updateCartUI() {
 
     if (cart.length === 0) {
         container.innerHTML = '<div style="background:white; padding:40px; border-radius:16px; text-align:center; box-shadow:var(--shadow); color:#888;">🛒 Votre panier est vide.</div>';
-        summary.classList.add('hidden'); return;
+        summary.classList.add('hidden'); 
+        return;
     }
 
-    summary.classList.remove('hidden'); container.innerHTML = ''; let total = 0;
+    summary.classList.remove('hidden'); 
+    container.innerHTML = ''; 
+    let total = 0;
+    
     cart.forEach(item => {
-        let itemTotal = item.price * item.qty; total += itemTotal;
-        container.insertAdjacentHTML('beforeend', `<div class="cart-item-row"><img src="${item.img}" alt="img"><div class="ci-details"><strong>${item.name}</strong><span class="ci-price-u">${item.price.toFixed(2)} € / u</span></div><div class="ci-qty-controls"><button onclick="changeQty(${item.id}, -1)">-</button><span>${item.qty}</span><button onclick="changeQty(${item.id}, 1)">+</button></div><div class="ci-total">${itemTotal.toFixed(2)} €</div></div>`);
+        // LE SECRET EST ICI : Si promo active -> Prix Coutant, sinon -> Prix Normal
+        let activePrice = isPromoCostActive ? item.priceCost : item.price;
+        let itemTotal = activePrice * item.qty; 
+        total += itemTotal;
+        
+        // Un petit badge rouge pour bien montrer que la promo est passée
+        let promoBadge = isPromoCostActive ? `<br><span style="color:var(--lux-red); font-size:0.75rem; font-weight:bold;">(Prix Coûtant)</span>` : '';
+
+        container.insertAdjacentHTML('beforeend', `
+        <div class="cart-item-row">
+            <img src="${item.img}" alt="img">
+            <div class="ci-details">
+                <strong>${item.name}</strong>
+                <span class="ci-price-u">${activePrice.toFixed(2)} € / u ${promoBadge}</span>
+            </div>
+            <div class="ci-qty-controls">
+                <button onclick="changeQty(${item.id}, -1)">-</button>
+                <span>${item.qty}</span>
+                <button onclick="changeQty(${item.id}, 1)">+</button>
+            </div>
+            <div class="ci-total">${itemTotal.toFixed(2)} €</div>
+        </div>`);
     });
+    
     document.getElementById('total-price-val').innerText = total.toFixed(2);
 }
 
@@ -322,25 +367,32 @@ window.changeQty = function(id, delta) {
     updateCartUI();
 };
 
+// --- VALIDATION DE LA COMMANDE (AVEC PROMO) ---
 window.handleCheckout = async function(e) {
     e.preventDefault();
     const name = document.getElementById('client-name').value;
     const email = document.getElementById('client-email').value;
-    
-    // NOUVEAU : On récupère le téléphone s'il a été rempli
     const phoneInput = document.getElementById('client-phone');
     const phoneVal = phoneInput ? phoneInput.value : ''; 
 
     const orderId = 'LBS-' + Math.floor(10000 + Math.random() * 90000);
-    let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0).toFixed(2);
     
-    let htmlRecap = cart.map(item => `<li>${item.name} (x${item.qty}) - ${(item.price * item.qty).toFixed(2)} €</li>`).join('');
+    // NOUVEAU CALCUL TOTAL ET REÇU EN FONCTION DE LA PROMO
+    let total = cart.reduce((sum, item) => {
+        let p = isPromoCostActive ? item.priceCost : item.price;
+        return sum + (p * item.qty);
+    }, 0).toFixed(2);
+
+    let htmlRecap = cart.map(item => {
+        let p = isPromoCostActive ? item.priceCost : item.price;
+        return `<li>${item.name} (x${item.qty}) - ${(p * item.qty).toFixed(2)} €</li>`;
+    }).join('');
 
     const commandeData = {
         id: orderId,
         client: name,
         email: email,
-        phone: phoneVal, // <-- On sauvegarde le téléphone ici dans le Cloud !
+        phone: phoneVal,
         total: parseFloat(total),
         date: new Date().toLocaleDateString('fr-FR'),
         status: 'pending',
@@ -351,7 +403,9 @@ window.handleCheckout = async function(e) {
         await window.setDoc(window.doc(window.db, "orders", orderId), commandeData);
         adminOrders.unshift(commandeData);
         console.log("✅ Commande envoyée sur le Cloud !");
-        envoyerEmailConfirmation(name, email, orderId, `<ul>${htmlRecap}</ul>`, total);
+        if (typeof envoyerEmailConfirmation === 'function') {
+            envoyerEmailConfirmation(name, email, orderId, `<ul>${htmlRecap}</ul>`, total);
+        }
     } catch (error) {
         console.error("❌ Erreur lors de l'envoi :", error);
     }
@@ -365,6 +419,10 @@ window.handleCheckout = async function(e) {
     cart = []; 
     updateCartUI(); 
     document.getElementById('checkout-form').reset();
+    
+    // TRÈS IMPORTANT : On désactive la promo pour le client suivant !
+    isPromoCostActive = false;
+    if(document.getElementById('promo-input')) document.getElementById('promo-input').value = '';
 };
 
 // ==========================================

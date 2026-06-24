@@ -32,11 +32,16 @@
             <div class="logo cursor-pointer" id="go-home">
                 <span class="c-red">Lux</span><span class="c-black">By</span><span class="c-blue">Sam</span>
             </div>
-            <div class="header-right">
-                <button id="nav-admin-btn" class="btn-outline hidden">⚙️ Espace Admin</button>
-                <button onclick="lockSite()" class="btn-outline hidden" id="nav-lock-btn" style="color: #dc3545; border-color: #dc3545;">🔒 Verrouiller</button>
-                <div class="cart-icon" id="open-cart">
-                    🛒 Mon Panier <span id="cart-count" class="badge">0</span>
+            <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+                <button id="nav-admin-btn" class="btn-outline hidden" style="border-color: #0b1d3a; color: #0b1d3a;">
+                    ⚙️ <span class="hide-mobile">Espace Admin</span>
+                </button>
+                <button id="nav-lock-btn" class="btn-outline hidden" onclick="window.lockSite()">
+                    🔒 <span class="hide-mobile">Verrouiller</span>
+                </button>
+                
+                <div class="cart-icon cursor-pointer" id="open-cart">
+                    🛒 <span class="hide-mobile">Mon Panier</span> <span class="badge" id="cart-count">0</span>
                 </div>
             </div>
         </div>
@@ -115,6 +120,10 @@
                 <div class="cart-summary-section hidden" id="cart-page-summary">
                     <div class="summary-card">
                         <h3>Récapitulatif</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <input type="text" id="promo-input" placeholder="Code promo" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; text-transform: uppercase;">
+                            <button type="button" class="btn-lux-blue" onclick="window.applyPromoCode()" style="padding: 10px 20px;">Appliquer</button>
+                        </div>
                         <div class="total-line mt-10">
                             <span>Total de la commande</span>
                             <span class="total-price"><span id="total-price-val">0.00</span> €</span>
