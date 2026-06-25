@@ -201,7 +201,16 @@ function handleSearchDropdown(e) {
         return; 
     }
     ui.clearSearch.classList.remove('hidden');
-    const results = products.filter(p => p.name.toLowerCase().includes(query) || p.cat.toLowerCase().includes(query));
+    
+    // --- NOUVELLE RECHERCHE INTELLIGENTE (Découpage par mots) ---
+    const motsRecherche = query.split(/\s+/);
+    const results = products.filter(p => {
+        const nomProduit = p.name.toLowerCase();
+        const catProduit = p.cat.toLowerCase();
+        // On vérifie que chaque mot tapé se trouve soit dans le nom, soit dans la catégorie
+        return motsRecherche.every(mot => nomProduit.includes(mot) || catProduit.includes(mot));
+    });
+
     ui.searchDropdown.innerHTML = '';
     
     if (results.length === 0) {
@@ -230,7 +239,14 @@ window.executeSearch = function(query) {
     document.getElementById('current-category-title').innerText = `Recherche : "${query}"`;
     views.products.classList.remove('hidden');
 
-    const results = products.filter(p => p.name.toLowerCase().includes(query) || p.cat.toLowerCase().includes(query));
+    // --- NOUVELLE RECHERCHE INTELLIGENTE (Découpage par mots) ---
+    const motsRecherche = query.split(/\s+/);
+    const results = products.filter(p => {
+        const nomProduit = p.name.toLowerCase();
+        const catProduit = p.cat.toLowerCase();
+        return motsRecherche.every(mot => nomProduit.includes(mot) || catProduit.includes(mot));
+    });
+
     const container = document.getElementById('products-container');
     container.innerHTML = '';
 
@@ -247,7 +263,7 @@ window.handleSuggestion = async function(e) {
     const prodName = document.getElementById('suggest-name').value;
     const newSug = { name: prodName, date: new Date().toLocaleDateString('fr-FR') };
     
-    // NOUVEAU : Sauvegarde la suggestion dans le Cloud
+    // Sauvegarde la suggestion dans le Cloud
     await window.setDoc(window.doc(window.db, "suggestions", Date.now().toString()), newSug);
     suggestions.push(newSug);
     
