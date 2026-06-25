@@ -529,6 +529,28 @@ window.saveNewPrices = async function() {
     }
 };
 
+// --- RÉINITIALISER LES PRIX (RETOUR AU PRIX COÛTANT) ---
+window.resetPricesToCost = function() {
+    // 1. Petite sécurité pour éviter les clics accidentels
+    if (!confirm("Confirmer ?")) {
+        return;
+    }
+
+    // 2. On parcourt toutes les cases de prix à l'écran
+    document.querySelectorAll('.admin-price-input').forEach(input => {
+        let prodId = parseInt(input.getAttribute('data-id'));
+        let p = products.find(prod => prod.id === prodId);
+        
+        // 3. On remplace la valeur par le prix d'achat d'origine
+        if (p && p.priceCost) {
+            input.value = p.priceCost.toFixed(2);
+        }
+    });
+
+    // 4. On prévient que c'est fait (mais qu'il faut sauvegarder !)
+    customAlert("💡 Prix réinitialisés à l'écran ! N'oubliez pas de cliquer sur 'Sauvegarder dans le Cloud' pour valider définitivement.");
+};
+
 // --- GESTION DES COMMANDES CLOUD ---
 function loadAdminOrders() {
     const tbody = document.getElementById('admin-orders-list'); tbody.innerHTML = '';
