@@ -612,10 +612,68 @@ window.closeOrderModal = function() { document.getElementById('order-modal').cla
 window.saveOrderStatus = async function() {
     const order = adminOrders.find(o => o.id === currentEditingOrderId);
     if(order) { 
-        order.status = document.getElementById('om-status').value; 
-        // NOUVEAU : Met à jour le statut dans Firebase
+        const newStatus = document.getElementById('om-status').value;
+        
+        // --- NOUVEAUTÉ : AJOUT AUTOMATIQUE AUX DÉPENSES ---
+        // Si la commande passe en "En cours" (progress) ou "Livrée" (delivered)
+        // ET que la dépense n'a pas déjà été comptabilisée (sécurité anti-doublon)
+        if ((newStatus === 'progress' || newStatus === 'delivered') && !order.expenseAdded) {
+            
+            let totalCoutant = 0;
+            
+            // 1. On calcule le prix d'achat total (Prix Coûtant) de la commande
+            if (order.items) {
+                let itemsList = order.items.split(', ');
+                itemsList.forEach(itemStr => {
+                    let match = itemStr.match(/(.*) \(x(\d+)\)/);
+                    if (match) {
+                        let name = match[1].trim();
+                        let qty = parseInt(match[2]);
+                        
+                        // On cherche le produit dans le catalogue pour récupérer son prix coûtant
+                        let prod = products.find(p => p.name === name);
+                        if (prod && prod.priceCost) {
+                            totalCoutant += (prod.priceCost * qty);
+                        }
+                    }
+                });
+            }
+
+            // 2. S'il y a bien un coût d'achat, on crée la facture automatiquement
+            if (totalCoutant > 0) {
+                let newExp = { 
+                    id: Date.now(), 
+                    name: `Achat stock - Commande ${order.id}`, 
+                    amount: totalCoutant, 
+                    date: new Date().toLocaleDateString('fr-FR') 
+                };
+                
+                // On sauvegarde la dépense dans Firebase
+                await window.setDoc(window.doc(window.db, "expenses", newExp.id.toString()), newExp);
+                expensesList.unshift(newExp);
+                
+                // On marque la commande avec un "tag" pour ne plus jamais l'ajouter en double
+                order.expenseAdded = true;
+                
+                // Message de confirmation pour toi
+                setTimeout(() => window.customAlert(`✅ Le prix d'achat de la commande (${totalCoutant.toFixed(2)} €) a été automatiquement déduit de vos bénéfices !`), 500);
+            }
+        }
+
+        // 3. On met à jour le statut
+        order.status = newStatus; 
+        
+        // 4. On sauvegarde la commande mise à jour dans Firebase
         await window.setDoc(window.doc(window.db, "orders", order.id), order);
+        
+        // 5. On rafraîchit l'affichage
         loadAdminOrders(); 
+        
+        // On force la mise à jour des finances en arrière-plan pour les graphiques
+        if (typeof renderExpenses === 'function') {
+            renderExpenses(); 
+        }
+        
         closeOrderModal(); 
     }
 };
