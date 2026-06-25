@@ -497,16 +497,36 @@ window.applyBulkIncrease = function() {
 };
 
 window.saveNewPrices = async function() {
-    document.querySelectorAll('.admin-price-input').forEach(input => {
-        let p = products.find(prod => prod.id === parseInt(input.getAttribute('data-id')));
-        if(p) p.price = parseFloat(input.value);
-    });
-    
-    // NOUVEAU : On sauvegarde les prix modifiés dans Firebase au lieu de créer un CSV
-    for (let p of products) {
-        await window.setDoc(window.doc(window.db, "prices", p.id.toString()), { price: p.price });
+    try {
+        // 1. On récupère UNIQUEMENT les champs de prix qui sont affichés à l'écran
+        const inputs = document.querySelectorAll('.admin-price-input');
+        
+        if (inputs.length === 0) return;
+
+        // 2. On prépare une liste d'envois simultanés vers le Cloud
+        const promises = [];
+
+        inputs.forEach(input => {
+            let prodId = parseInt(input.getAttribute('data-id'));
+            let newPrice = parseFloat(input.value);
+            
+            // Mise à jour de la mémoire locale
+            let p = products.find(prod => prod.id === prodId);
+            if(p) p.price = newPrice;
+            
+            // On prépare l'envoi Firebase uniquement pour CE produit
+            let promise = window.setDoc(window.doc(window.db, "prices", prodId.toString()), { price: newPrice });
+            promises.push(promise);
+        });
+        
+        // 3. On exécute toutes les sauvegardes en un clin d'œil !
+        await Promise.all(promises);
+        
+        customAlert("✅ Nouveaux prix sauvegardés avec succès dans le Cloud !");
+    } catch (error) {
+        console.error("Erreur Firebase :", error);
+        customAlert("❌ Erreur lors de la sauvegarde. Vérifiez votre connexion internet.");
     }
-    customAlert("✅ Nouveaux prix sauvegardés !");
 };
 
 // --- GESTION DES COMMANDES CLOUD ---
