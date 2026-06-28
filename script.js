@@ -399,9 +399,27 @@ window.handleCheckout = async function(e) {
         return sum + (p * item.qty);
     }, 0).toFixed(2);
 
+    // NOUVEAU CALCUL RÉCAPITULATIF POUR L'E-MAIL (Avec images et couleurs officielles)
     let htmlRecap = cart.map(item => {
         let p = isPromoCostActive ? item.priceCost : item.price;
-        return `<li>${item.name} (x${item.qty}) - ${(p * item.qty).toFixed(2)} €</li>`;
+        let itemTotal = (p * item.qty).toFixed(2);
+        
+        // ⚠️ N'oublie pas de mettre le vrai lien de ton GitHub ici !
+        let lienImageAbsolu = "https://TON_LIEN_GITHUB_ICI.com/" + item.img; 
+
+        return `
+        <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #EEEEEE; width: 55px; vertical-align: middle;">
+                <img src="${lienImageAbsolu}" width="45" height="45" style="display: block; border-radius: 6px; border: 1px solid #E0E0E0; object-fit: contain; background-color: #ffffff;">
+            </td>
+            <td style="padding: 12px 10px; border-bottom: 1px solid #EEEEEE; vertical-align: middle;">
+                <strong style="color: #1A1A1A; font-size: 14px; display: block; line-height: 1.3;">${item.name}</strong>
+                <span style="color: #888888; font-size: 12px;">Quantité : ${item.qty}</span>
+            </td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #EEEEEE; text-align: right; white-space: nowrap; font-weight: bold; color: #00A3E0; font-size: 15px; vertical-align: middle;">
+                ${itemTotal} €
+            </td>
+        </tr>`;
     }).join('');
 
     const commandeData = {
@@ -411,6 +429,7 @@ window.handleCheckout = async function(e) {
         phone: phoneVal,
         total: parseFloat(total),
         date: new Date().toLocaleDateString('fr-FR'),
+        timestamp: Date.now(),
         status: 'pending',
         items: cart.map(item => item.name + ' (x' + item.qty + ')').join(', ')
     };
@@ -553,14 +572,37 @@ window.resetPricesToCost = function() {
 
 // --- GESTION DES COMMANDES CLOUD ---
 function loadAdminOrders() {
-    const tbody = document.getElementById('admin-orders-list'); tbody.innerHTML = '';
+    const tbody = document.getElementById('admin-orders-list'); 
+    tbody.innerHTML = '';
+    
+    // 🎯 NOUVEAU : TRI INTELLIGENT DES COMMANDES (Plus récentes en haut)
+    adminOrders.sort((a, b) => {
+        // 1. Si on a notre nouveau chronomètre ultra-précis (pour les nouvelles commandes)
+        if (a.timestamp && b.timestamp) {
+            return b.timestamp - a.timestamp;
+        }
+        // 2. Sinon (pour tes anciennes commandes), on lit la date classique et on l'inverse (ex: 28/06/2026 devient 20260628) pour pouvoir les classer
+        let dateA = a.date ? a.date.split('/').reverse().join('') : '0'; 
+        let dateB = b.date ? b.date.split('/').reverse().join('') : '0';
+        return dateB.localeCompare(dateA);
+    });
+
+    // 🎯 AFFICHAGE DU TABLEAU
     adminOrders.forEach(order => {
         let badgeClass = '', statusText = '';
         if(order.status === 'pending') { badgeClass = 'badge-pending'; statusText = 'En attente'; }
         if(order.status === 'progress') { badgeClass = 'badge-progress'; statusText = 'En livraison'; }
         if(order.status === 'delivered') { badgeClass = 'badge-delivered'; statusText = 'Livrée'; }
         if(order.status === 'cancelled') { badgeClass = 'badge-cancelled'; statusText = 'Annulée'; }
-        tbody.insertAdjacentHTML('beforeend', `<tr><td><strong>${order.id}</strong></td><td>${order.client}</td><td>${order.date}</td><td><strong>${order.total.toFixed(2)} €</strong></td><td><span class="badge ${badgeClass}">${statusText}</span></td><td><button class="btn-outline" onclick="openOrderModal('${order.id}')" style="padding:5px 10px; font-size:0.8rem;">Gérer</button></td></tr>`);
+        
+        tbody.insertAdjacentHTML('beforeend', `<tr>
+            <td><strong>${order.id}</strong></td>
+            <td>${order.client}</td>
+            <td>${order.date}</td>
+            <td><strong>${order.total.toFixed(2)} €</strong></td>
+            <td><span class="badge ${badgeClass}">${statusText}</span></td>
+            <td><button class="btn-outline" onclick="openOrderModal('${order.id}')" style="padding:5px 10px; font-size:0.8rem;">Gérer</button></td>
+        </tr>`);
     });
 }
 
