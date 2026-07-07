@@ -404,8 +404,7 @@ window.handleCheckout = async function(e) {
         let p = isPromoCostActive ? item.priceCost : item.price;
         let itemTotal = (p * item.qty).toFixed(2);
         
-        // ⚠️ N'oublie pas de mettre le vrai lien de ton GitHub ici !
-        let lienImageAbsolu = "https://TON_LIEN_GITHUB_ICI.com/" + item.img; 
+        let lienImageAbsolu = "https://raw.githubusercontent.com/SamSam54740/LuxBySam/main/" + item.img;
 
         return `
         <tr>
@@ -678,14 +677,11 @@ window.saveOrderStatus = async function() {
     if(order) { 
         const newStatus = document.getElementById('om-status').value;
         
-        // --- NOUVEAUTÉ : AJOUT AUTOMATIQUE AUX DÉPENSES ---
-        // Si la commande passe en "En cours" (progress) ou "Livrée" (delivered)
-        // ET que la dépense n'a pas déjà été comptabilisée (sécurité anti-doublon)
+        // Si la commande passe en "En cours" ou "Livrée" et que la dépense n'a pas été ajoutée
         if ((newStatus === 'progress' || newStatus === 'delivered') && !order.expenseAdded) {
             
             let totalCoutant = 0;
             
-            // 1. On calcule le prix d'achat total (Prix Coûtant) de la commande
             if (order.items) {
                 let itemsList = order.items.split(', ');
                 itemsList.forEach(itemStr => {
@@ -693,8 +689,6 @@ window.saveOrderStatus = async function() {
                     if (match) {
                         let name = match[1].trim();
                         let qty = parseInt(match[2]);
-                        
-                        // On cherche le produit dans le catalogue pour récupérer son prix coûtant
                         let prod = products.find(p => p.name === name);
                         if (prod && prod.priceCost) {
                             totalCoutant += (prod.priceCost * qty);
@@ -703,7 +697,6 @@ window.saveOrderStatus = async function() {
                 });
             }
 
-            // 2. S'il y a bien un coût d'achat, on crée la facture automatiquement
             if (totalCoutant > 0) {
                 let newExp = { 
                     id: Date.now(), 
@@ -712,28 +705,21 @@ window.saveOrderStatus = async function() {
                     date: new Date().toLocaleDateString('fr-FR') 
                 };
                 
-                // On sauvegarde la dépense dans Firebase
                 await window.setDoc(window.doc(window.db, "expenses", newExp.id.toString()), newExp);
                 expensesList.unshift(newExp);
                 
-                // On marque la commande avec un "tag" pour ne plus jamais l'ajouter en double
+                // On marque la commande pour éviter les doublons
                 order.expenseAdded = true;
                 
-                // Message de confirmation pour toi
-                setTimeout(() => window.customAlert(`✅ Le prix d'achat de la commande (${totalCoutant.toFixed(2)} €) a été automatiquement déduit de vos bénéfices !`), 500);
+                // L'ALERTE A ÉTÉ SUPPRIMÉE ICI ! 🤫
             }
         }
 
-        // 3. On met à jour le statut
         order.status = newStatus; 
         
-        // 4. On sauvegarde la commande mise à jour dans Firebase
         await window.setDoc(window.doc(window.db, "orders", order.id), order);
-        
-        // 5. On rafraîchit l'affichage
         loadAdminOrders(); 
         
-        // On force la mise à jour des finances en arrière-plan pour les graphiques
         if (typeof renderExpenses === 'function') {
             renderExpenses(); 
         }
