@@ -677,51 +677,58 @@ window.saveOrderStatus = async function() {
     if(order) { 
         const newStatus = document.getElementById('om-status').value;
         
-        // Si la commande passe en "En cours" ou "Livrée" et que la dépense n'a pas été ajoutée
-        if ((newStatus === 'progress' || newStatus === 'delivered') && !order.expenseAdded) {
-            
-            let totalCoutant = 0;
-            
-            if (order.items) {
-                let itemsList = order.items.split(', ');
-                itemsList.forEach(itemStr => {
-                    let match = itemStr.match(/(.*) \(x(\d+)\)/);
-                    if (match) {
-                        let name = match[1].trim();
-                        let qty = parseInt(match[2]);
-                        let prod = products.find(p => p.name === name);
-                        if (prod && prod.priceCost) {
-                            totalCoutant += (prod.priceCost * qty);
-                        }
+        // 1. Calcul du prix d'achat total (Prix Coûtant) de la commande
+        let totalCoutant = 0;
+        if (order.items) {
+            let itemsList = order.items.split(', ');
+            itemsList.forEach(itemStr => {
+                let match = itemStr.match(/(.*) \(x(\d+)\)/);
+                if (match) {
+                    let name = match[1].trim();
+                    let qty = parseInt(match[2]);
+                    let prod = products.find(p => p.name === name);
+                    if (prod && prod.priceCost) {
+                        totalCoutant += (prod.priceCost * qty);
                     }
-                });
-            }
-
-            if (totalCoutant > 0) {
-                let newExp = { 
-                    id: Date.now(), 
-                    name: `Achat stock - Commande ${order.id}`, 
-                    amount: totalCoutant, 
-                    date: new Date().toLocaleDateString('fr-FR') 
-                };
-                
-                await window.setDoc(window.doc(window.db, "expenses", newExp.id.toString()), newExp);
-                expensesList.unshift(newExp);
-                
-                // On marque la commande pour éviter les doublons
-                order.expenseAdded = true;
-                
-                // L'ALERTE A ÉTÉ SUPPRIMÉE ICI ! 🤫
-            }
+                }
+            });
         }
 
+        // 2. GESTION DYNAMIQUE DE LA DÉPENSE (Basée sur le nom de la commande)
+        const expectedExpenseName = `Achat stock - Commande ${order.id}`;
+        const existingExpense = expensesList.find(e => e.name === expectedExpenseName);
+
+        // A. Si on passe en statut "Actif" (Livraison/Livrée) ET que la facture n'existe pas -> ON CRÉE
+        if ((newStatus === 'progress' || newStatus === 'delivered') && !existingExpense && totalCoutant > 0) {
+            let newExp = { 
+                id: Date.now(), 
+                name: expectedExpenseName, 
+                amount: totalCoutant, 
+                date: new Date().toLocaleDateString('fr-FR') 
+            };
+            await window.setDoc(window.doc(window.db, "expenses", newExp.id.toString()), newExp);
+            expensesList.unshift(newExp);
+        }
+        // B. Si on repasse en statut "Inactif" (Attente/Annulée) ET que la facture existe -> ON SUPPRIME
+        else if ((newStatus === 'pending' || newStatus === 'cancelled') && existingExpense) {
+            await window.deleteDoc(window.doc(window.db, "expenses", existingExpense.id.toString()));
+            expensesList = expensesList.filter(e => e.id !== existingExpense.id);
+        }
+
+        // 3. On met à jour le statut
         order.status = newStatus; 
         
+        // 4. On sauvegarde la commande mise à jour dans Firebase
         await window.setDoc(window.doc(window.db, "orders", order.id), order);
+        
+        // 5. Rafraîchissement complet de l'interface en direct
         loadAdminOrders(); 
         
         if (typeof renderExpenses === 'function') {
-            renderExpenses(); 
+            renderExpenses(); // Met à jour la liste des dépenses (et recalcule les chiffres)
+        }
+        if (typeof window.updateDashboardStats === 'function') {
+            window.updateDashboardStats(); // Force la mise à jour des stats et graphiques
         }
         
         closeOrderModal(); 
