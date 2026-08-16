@@ -308,7 +308,7 @@ function showCategory() {
             if (currentSubCategory === 'cognac') return contient(['cognac', 'hennessy', 'remy martin', 'courvoisier', 'bisquit', 'joseph guy', 'brandy', 'ronsard', 'torres', 'vecchia romagna', 'metaxa']);
             if (currentSubCategory === 'calvados') return contient(['calvados', 'breuil', 'pere magloire']);
             if (currentSubCategory === 'mousseux') return contient(['mousseux', 'freixenet', 'bottega', 'poll fabaire', 'carte blanche', 'chenet ice', 'jp chenet', 'ferrari brut']);
-            if (currentSubCategory === 'champagne') return contient(['champagne', 'Moet Chandon', 'Veuve Clicquot', 'dom perignon', 'ruinart', 'Angel Black', 'Louis Roederer', 'Luc Belaire', ]);
+            if (currentSubCategory === 'champagne') return contient(['champagne', 'moet chandon', 'veuve clicquot', 'dom perignon', 'ruinart', 'angel black', 'louis roederer', 'luc belaire', ]);
             
             return true;
         });
