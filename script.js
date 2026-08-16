@@ -370,7 +370,7 @@ window.applyPromoCode = function() {
     const rawCode = document.getElementById('promo-input').value.toUpperCase().trim();
     const secretPromo = btoa(rawCode);
 
-    if (secretPromo === 'UFJPTU85OA==') { 
+    if (secretPromo === 'U0FNOTg=') { 
         isPromoCostActive = true;
         updateCartUI(); 
         window.customAlert('✅ Code valide : Prix coûtants activés !');
