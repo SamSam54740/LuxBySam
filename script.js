@@ -277,56 +277,64 @@ function showCategory() {
     document.getElementById('current-category-title').innerText = currentCategory;
     views.products.classList.remove('hidden');
 
-    // 1. Gérer l'apparition du bandeau (uniquement pour les alcools)
     const subBanner = document.getElementById('sub-category-filters');
     if (currentCategory === 'Alcools') {
         subBanner.classList.remove('hidden');
     } else {
         subBanner.classList.add('hidden');
-        currentSubCategory = 'all'; // On réinitialise si on quitte les alcools
+        currentSubCategory = 'all'; 
     }
 
-    // 2. Filtrer d'abord par la grande catégorie (Alcools, Cigarettes...)
     let filtered = products.filter(p => p.cat === currentCategory);
 
-    // 3. L'Intelligence Artificielle pour classer les sous-catégories d'alcool
+    // MOTEUR DE TRI INTELLIGENT EXHAUSTIF
     if (currentCategory === 'Alcools' && currentSubCategory !== 'all') {
         filtered = filtered.filter(p => {
             let n = p.name.toLowerCase();
-            if (currentSubCategory === 'vodka') return n.includes('vodka') || n.includes('poliakov') || n.includes('smirnoff') || n.includes('absolut') || n.includes('belvedere') || n.includes('ciroc') || n.includes('grey goose') || n.includes('eristoff') || n.includes('finlandia');
-            if (currentSubCategory === 'whisky') return n.includes('whisky') || n.includes('bourbon') || n.includes('jack daniel') || n.includes('chivas') || n.includes('william') || n.includes('johnnie walker') || n.includes('clan campbell') || n.includes('jameson') || n.includes('ballantine');
-            if (currentSubCategory === 'rhum') return n.includes('rhum') || n.includes('rum') || n.includes('bacardi') || n.includes('morgan') || n.includes('havana') || n.includes('saint james') || n.includes('diplomatico') || n.includes('bumbu') || n.includes('kraken');
-            if (currentSubCategory === 'gin') return n.includes('gin') || n.includes('bombay') || n.includes('gordon') || n.includes('hendrick') || n.includes('tanqueray');
-            if (currentSubCategory === 'liqueur') return n.includes('liqueur') || n.includes('jager') || n.includes('jäger') || n.includes('get 27') || n.includes('baileys') || n.includes('ricard') || n.includes('aperol') || n.includes('campari') || n.includes('cointreau') || n.includes('passoa') || n.includes('malibu') || n.includes('amaretto') || n.includes('martini');
-            if (currentSubCategory === 'bulles') return n.includes('champagne') || n.includes('brut') || n.includes('freixenet') || n.includes('moet') || n.includes('veuve') || n.includes('dom perignon') || n.includes('ruinart');
+            // Petite fonction magique pour chercher plusieurs mots d'un coup
+            const contient = (mots) => mots.some(mot => n.includes(mot));
+            
+            if (currentSubCategory === 'whisky') return contient(['whisky', 'whiskey', 'bourbon', 'scotch', 'jack daniel', 'chivas', 'william', 'johnnie walker', 'jw.', 'clan campbell', 'jameson', 'ballantine', 'aberfeldy', 'akashi', 'ardbeg', 'arran', 'bowmore', 'bushmills', 'canadian club', 'caol ila', 'cardhu', 'crown royal', 'dimple', 'drambuie', 'famous grouse', 'four roses', 'glenfiddich', 'grants', 'isle of jura', 'jb', 'j&b', 'jim beam', 'lagavulin', 'laphroaig', 'loch lomond', 'matsui', 'mortlach', 'muja', 'nikka', 'old smuggler', 'proper no', 'sir edward', 'talisker', 'tamnavulin', 'tomatin', 'tomintoul', 'tullamore', 'lochnagar', 'label 5']);
+            if (currentSubCategory === 'pastis') return contient(['pastis', 'ricard', 'duval', '51', 'raki', 'ouzo']);
+            if (currentSubCategory === 'vodka') return contient(['vodka', 'poliakov', 'smirnoff', 'absolut', 'belvedere', 'ciroc', 'grey goose', 'eristoff', 'finlandia', 'beluga', 'berganov', 'crystal head', 'debowa', 'firestarter', 'five lakes', 'game time', 'gorbatschow', 'mermaid tears', 'mont blanc', 'outer space', 'pravda', 'puschkin', 'roberto cavalli', 'royal dragon', 'trojka', 'ukiyo', 'zlatogor', 'zubrowka', 'vodquila']);
+            if (currentSubCategory === 'liqueur') return contient(['liqueur', 'liquor', 'get 27', 'get 31', 'baileys', 'cointreau', 'passoa', 'malibu', 'kahlua', 'amarula', 'limoncello', 'limoncino', 'limonello', 'tia maria', 'pisang', 'safari', 'batida', 'abacaty', 'berentzen', 'berliner luft', 'borghetti', 'caffo', 'cellini', 'china clementi', 'cream heroes', 'cassis', 'demandis', 'dubai schokoladen', 'filliers', 'flügel', 'glayva', 'grand marnier', 'irish mist', 'izarra', 'kleiner feigling', 'la fee', 'licor 43', 'mandarine napoleon', 'marito', 'montenegro', 'mozart', 'nuvo', 'pepino', 'pinaq', 'pongo', 'quicky', 'ramazzotti amaro', 'riviere du mat', 'rum chata', 's. maria', 'santocci', 'sheridans', 'sisca', 'underberg', 'villa massa', 'woodberries', 'southern comfort', 'jinro']);
+            if (currentSubCategory === 'tequila') return contient(['tequila', 'sierra', 'san jose', 'clase azul', 'cuervo', 'dona celia', 'olmeca', 'patron', 'vodquila']);
+            if (currentSubCategory === 'eaudevie') return contient(['eau de vie', 'framboise spiritueux', 'mirabelle', 'quetsch', 'williams spiritueux', 'alcool neutre', 'pisco']);
+            if (currentSubCategory === 'brandy') return contient(['brandy', 'ronsard', 'torres', 'vecchia romagna', 'metaxa', 'asbach']);
+            if (currentSubCategory === 'amaretto') return contient(['amaretto', 'disaronno']);
+            if (currentSubCategory === 'bitter') return contient(['bitter', 'aperol', 'campari', 'picon', 'suze', 'amaro del capo', 'vecchio amaro']);
+            if (currentSubCategory === 'jagermeister') return contient(['jagermeister', 'jägermeister', 'jager']);
+            if (currentSubCategory === 'porto') return contient(['porto', 'cruz']);
+            if (currentSubCategory === 'rum') return contient(['rhum', 'rum', 'bacardi', 'morgan', 'havana', 'saint james', 'st. james', 'diplomatico', 'bumbu', 'kraken', 'abuelo', 'botran', 'cachaca', 'cubaney', 'deadhead', 'dictador', 'don diego', 'el ron prohibido', 'exquisito', 'flor de cana', 'fortin', 'kong', 'legendario', 'matusalem', 'plantation', 'planteray', 'ratu', 'red planet', 'tanduay', 'zacapa', 'a.h.riise', 'bombarda', 'cabo bay']);
+            if (currentSubCategory === 'mousseux') return contient(['mousseux', 'freixenet', 'bottega', 'poll fabaire', 'luc belaire', 'carte blanche', 'chenet ice', 'jp chenet']);
+            if (currentSubCategory === 'cognac') return contient(['cognac', 'hennessy', 'remy martin', 'courvoisier', 'bisquit', 'joseph guy']);
+            if (currentSubCategory === 'gin') return contient(['gin', 'bombay', 'gordon', 'hendrick', 'tanqueray', 'adnams', 'amazzoni', 'bloom', 'bulldog', 'edinburgh', 'etsu', 'gibsons', 'ginato', 'gvine', 'ish', 'jawbox', 'ki no bi', 'lind & lime', 'liverpool', 'loopuyt', 'mombasa', 'monkey 47', 'nordes', 'opihr', 'pinkster', 'sakurao', 'th gin', 'whitley', 'z44', 'in flames']);
+            if (currentSubCategory === 'vermouth') return contient(['vermouth', 'martini', 'lillet', 'noilly']);
+            if (currentSubCategory === 'calvados') return contient(['calvados', 'breuil', 'pere magloire']);
+            if (currentSubCategory === 'champagne') return contient(['champagne', 'moet', 'veuve', 'dom perignon', 'ruinart', 'ferrari brut']);
+            if (currentSubCategory === 'sambuca') return contient(['sambuca', 'molinari', 'ramazzotti']);
+            if (currentSubCategory === 'alcopop') return contient(['alcopop', 'smirnoff ice', 'breezer', 'desperados', 'salmari']);
+            
             return true;
         });
     }
 
-    // 4. Trier (Prix, Alpha...)
     if (currentSort === 'alpha') filtered.sort((a, b) => a.name.localeCompare(b.name));
     else if (currentSort === 'price-asc') filtered.sort((a, b) => a.price - b.price);
     else if (currentSort === 'price-desc') filtered.sort((a, b) => b.price - a.price);
 
-    // 5. Afficher à l'écran
     const container = document.getElementById('products-container');
     container.innerHTML = '';
     filtered.forEach(p => container.insertAdjacentHTML('beforeend', renderProductCard(p)));
 }
 
-// Fonction pour changer de sous-catégorie quand on clique sur un bouton
+// Assure-toi que cette fonction est bien juste en dessous !
 window.filterSubCategory = function(subCat) {
     currentSubCategory = subCat;
-    
-    // Mettre en surbrillance le bouton cliqué
     document.querySelectorAll('.sub-btn').forEach(btn => {
         btn.classList.remove('active');
-        if(btn.getAttribute('onclick').includes(subCat)) {
-            btn.classList.add('active');
-        }
+        if(btn.getAttribute('onclick').includes(subCat)) btn.classList.add('active');
     });
-
-    // Rafraîchir l'affichage
     showCategory();
 };
 
