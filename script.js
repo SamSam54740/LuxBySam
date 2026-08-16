@@ -287,33 +287,28 @@ function showCategory() {
 
     let filtered = products.filter(p => p.cat === currentCategory);
 
-    // MOTEUR DE TRI INTELLIGENT EXHAUSTIF
+    // MOTEUR DE TRI INTELLIGENT (16 Catégories)
     if (currentCategory === 'Alcools' && currentSubCategory !== 'all') {
         filtered = filtered.filter(p => {
             let n = p.name.toLowerCase();
-            // Petite fonction magique pour chercher plusieurs mots d'un coup
             const contient = (mots) => mots.some(mot => n.includes(mot));
             
             if (currentSubCategory === 'whisky') return contient(['whisky', 'whiskey', 'bourbon', 'scotch', 'jack daniel', 'chivas', 'william', 'johnnie walker', 'jw.', 'clan campbell', 'jameson', 'ballantine', 'aberfeldy', 'akashi', 'ardbeg', 'arran', 'bowmore', 'bushmills', 'canadian club', 'caol ila', 'cardhu', 'crown royal', 'dimple', 'drambuie', 'famous grouse', 'four roses', 'glenfiddich', 'grants', 'isle of jura', 'jb', 'j&b', 'jim beam', 'lagavulin', 'laphroaig', 'loch lomond', 'matsui', 'mortlach', 'muja', 'nikka', 'old smuggler', 'proper no', 'sir edward', 'talisker', 'tamnavulin', 'tomatin', 'tomintoul', 'tullamore', 'lochnagar', 'label 5']);
-            if (currentSubCategory === 'pastis') return contient(['pastis', 'ricard', 'duval', '51', 'raki', 'ouzo']);
             if (currentSubCategory === 'vodka') return contient(['vodka', 'poliakov', 'smirnoff', 'absolut', 'belvedere', 'ciroc', 'grey goose', 'eristoff', 'finlandia', 'beluga', 'berganov', 'crystal head', 'debowa', 'firestarter', 'five lakes', 'game time', 'gorbatschow', 'mermaid tears', 'mont blanc', 'outer space', 'pravda', 'puschkin', 'roberto cavalli', 'royal dragon', 'trojka', 'ukiyo', 'zlatogor', 'zubrowka', 'vodquila']);
-            if (currentSubCategory === 'liqueur') return contient(['liqueur', 'liquor', 'get 27', 'get 31', 'baileys', 'cointreau', 'passoa', 'malibu', 'kahlua', 'amarula', 'limoncello', 'limoncino', 'limonello', 'tia maria', 'pisang', 'safari', 'batida', 'abacaty', 'berentzen', 'berliner luft', 'borghetti', 'caffo', 'cellini', 'china clementi', 'cream heroes', 'cassis', 'demandis', 'dubai schokoladen', 'filliers', 'flügel', 'glayva', 'grand marnier', 'irish mist', 'izarra', 'kleiner feigling', 'la fee', 'licor 43', 'mandarine napoleon', 'marito', 'montenegro', 'mozart', 'nuvo', 'pepino', 'pinaq', 'pongo', 'quicky', 'ramazzotti amaro', 'riviere du mat', 'rum chata', 's. maria', 'santocci', 'sheridans', 'sisca', 'underberg', 'villa massa', 'woodberries', 'southern comfort', 'jinro']);
-            if (currentSubCategory === 'tequila') return contient(['tequila', 'sierra', 'san jose', 'clase azul', 'cuervo', 'dona celia', 'olmeca', 'patron', 'vodquila']);
-            if (currentSubCategory === 'eaudevie') return contient(['eau de vie', 'framboise spiritueux', 'mirabelle', 'quetsch', 'williams spiritueux', 'alcool neutre', 'pisco']);
-            if (currentSubCategory === 'brandy') return contient(['brandy', 'ronsard', 'torres', 'vecchia romagna', 'metaxa', 'asbach']);
-            if (currentSubCategory === 'amaretto') return contient(['amaretto', 'disaronno']);
-            if (currentSubCategory === 'bitter') return contient(['bitter', 'aperol', 'campari', 'picon', 'suze', 'amaro del capo', 'vecchio amaro']);
+            if (currentSubCategory === 'rhum') return contient(['rhum', 'rum', 'bacardi', 'morgan', 'havana', 'saint james', 'st. james', 'diplomatico', 'bumbu', 'kraken', 'abuelo', 'botran', 'cachaca', 'cubaney', 'deadhead', 'dictador', 'don diego', 'prohibido', 'exquisito', 'flor de cana', 'fortin', 'kong', 'legendario', 'matusalem', 'plantation', 'planteray', 'ratu', 'red planet', 'tanduay', 'zacapa', 'riise', 'bombarda', 'cabo bay']);
+            if (currentSubCategory === 'pastis') return contient(['pastis', 'ricard', 'duval', '51', 'raki', 'ouzo']);
             if (currentSubCategory === 'jagermeister') return contient(['jagermeister', 'jägermeister', 'jager']);
-            if (currentSubCategory === 'porto') return contient(['porto', 'cruz']);
-            if (currentSubCategory === 'rum') return contient(['rhum', 'rum', 'bacardi', 'morgan', 'havana', 'saint james', 'st. james', 'diplomatico', 'bumbu', 'kraken', 'abuelo', 'botran', 'cachaca', 'cubaney', 'deadhead', 'dictador', 'don diego', 'el ron prohibido', 'exquisito', 'flor de cana', 'fortin', 'kong', 'legendario', 'matusalem', 'plantation', 'planteray', 'ratu', 'red planet', 'tanduay', 'zacapa', 'a.h.riise', 'bombarda', 'cabo bay']);
-            if (currentSubCategory === 'mousseux') return contient(['mousseux', 'freixenet', 'bottega', 'poll fabaire', 'luc belaire', 'carte blanche', 'chenet ice', 'jp chenet']);
-            if (currentSubCategory === 'cognac') return contient(['cognac', 'hennessy', 'remy martin', 'courvoisier', 'bisquit', 'joseph guy']);
             if (currentSubCategory === 'gin') return contient(['gin', 'bombay', 'gordon', 'hendrick', 'tanqueray', 'adnams', 'amazzoni', 'bloom', 'bulldog', 'edinburgh', 'etsu', 'gibsons', 'ginato', 'gvine', 'ish', 'jawbox', 'ki no bi', 'lind & lime', 'liverpool', 'loopuyt', 'mombasa', 'monkey 47', 'nordes', 'opihr', 'pinkster', 'sakurao', 'th gin', 'whitley', 'z44', 'in flames']);
-            if (currentSubCategory === 'vermouth') return contient(['vermouth', 'martini', 'lillet', 'noilly']);
+            if (currentSubCategory === 'tequila') return contient(['tequila', 'sierra', 'san jose', 'clase azul', 'cuervo', 'dona celia', 'olmeca', 'patron']);
+            if (currentSubCategory === 'liqueur') return contient(['liqueur', 'liquor', 'get 27', 'get 31', 'baileys', 'cointreau', 'passoa', 'malibu', 'kahlua', 'amarula', 'limoncello', 'limoncino', 'limonello', 'tia maria', 'pisang', 'safari', 'batida', 'abacaty', 'berentzen', 'berliner luft', 'borghetti', 'caffo', 'cellini', 'china clementi', 'cream heroes', 'cassis', 'demandis', 'dubai', 'filliers', 'flügel', 'glayva', 'grand marnier', 'irish mist', 'izarra', 'kleiner feigling', 'la fee', 'licor 43', 'mandarine', 'marito', 'montenegro', 'mozart', 'nuvo', 'pepino', 'pinaq', 'pongo', 'quicky', 'ramazzotti amaro', 'riviere', 'rum chata', 's. maria', 'santocci', 'sheridans', 'sisca', 'underberg', 'villa massa', 'woodberries', 'southern comfort', 'jinro', 'amaretto', 'disaronno', 'campari', 'suze', 'amaro', 'sambuca', 'molinari', 'martini', 'vermouth', 'lillet', 'alcopop', 'smirnoff ice', 'salmari']);
+            if (currentSubCategory === 'eaudevie') return contient(['eau de vie', 'framboise', 'mirabelle', 'quetsch', 'williams', 'alcool neutre', 'pisco']);
+            if (currentSubCategory === 'spritz') return contient(['spritz', 'aperol', 'bitterol', 'veneziano']);
+            if (currentSubCategory === 'picon') return contient(['picon']);
+            if (currentSubCategory === 'porto') return contient(['porto', 'cruz']);
+            if (currentSubCategory === 'cognac') return contient(['cognac', 'hennessy', 'remy martin', 'courvoisier', 'bisquit', 'joseph guy', 'brandy', 'ronsard', 'torres', 'vecchia romagna', 'metaxa']);
             if (currentSubCategory === 'calvados') return contient(['calvados', 'breuil', 'pere magloire']);
+            if (currentSubCategory === 'mousseux') return contient(['mousseux', 'freixenet', 'bottega', 'poll fabaire', 'luc belaire', 'carte blanche', 'chenet ice', 'jp chenet']);
             if (currentSubCategory === 'champagne') return contient(['champagne', 'moet', 'veuve', 'dom perignon', 'ruinart', 'ferrari brut']);
-            if (currentSubCategory === 'sambuca') return contient(['sambuca', 'molinari', 'ramazzotti']);
-            if (currentSubCategory === 'alcopop') return contient(['alcopop', 'smirnoff ice', 'breezer', 'desperados', 'salmari']);
             
             return true;
         });
@@ -328,7 +323,7 @@ function showCategory() {
     filtered.forEach(p => container.insertAdjacentHTML('beforeend', renderProductCard(p)));
 }
 
-// Assure-toi que cette fonction est bien juste en dessous !
+// Assure-toi que cette fonction reste bien ici !
 window.filterSubCategory = function(subCat) {
     currentSubCategory = subCat;
     document.querySelectorAll('.sub-btn').forEach(btn => {
