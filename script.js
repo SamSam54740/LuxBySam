@@ -304,7 +304,7 @@ function showCategory() {
             if (currentSubCategory === 'eaudevie') return contient(['eau de vie', 'framboise', 'mirabelle', 'quetsch', 'williams', 'alcool neutre']);
             if (currentSubCategory === 'spritz') return contient(['spritz', 'aperol', 'bitterol', 'veneziano', 'campari']);
             if (currentSubCategory === 'picon') return contient(['picon']);
-            if (currentSubCategory === 'porto') return contient(['porto', 'cruz']);
+            if (currentSubCategory === 'porto') return contient(['porto', 'cruz', 'amuro', 'port']);
             if (currentSubCategory === 'cognac') return contient(['cognac', 'hennessy', 'remy martin', 'courvoisier', 'bisquit', 'joseph guy', 'brandy', 'ronsard', 'torres', 'vecchia romagna', 'metaxa']);
             if (currentSubCategory === 'calvados') return contient(['calvados', 'breuil', 'pere magloire']);
             if (currentSubCategory === 'mousseux') return contient(['mousseux', 'freixenet', 'bottega', 'poll fabaire', 'carte blanche', 'chenet ice', 'jp chenet', 'ferrari brut']);
