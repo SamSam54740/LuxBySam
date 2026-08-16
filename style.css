@@ -303,6 +303,44 @@ footer { background: #2C3E50; color: white; padding: 40px 0 30px; margin-top: 60
 .copyright { color: #aaa; margin-bottom: 10px; }
 .flags { font-size: 1.5rem; letter-spacing: 10px;}
 
+/* --- BANDEAU SOUS-CATÉGORIES ALCOOLS --- */
+.sub-nav-banner {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Cache la barre sur Firefox */
+}
+.sub-nav-banner::-webkit-scrollbar { 
+    display: none; /* Cache la barre sur Chrome/Safari */
+}
+
+.sub-btn {
+    background: white;
+    border: 1px solid var(--border-gray);
+    color: #666;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+.sub-btn:hover {
+    border-color: var(--lux-blue);
+    color: var(--lux-blue);
+}
+.sub-btn.active {
+    background: var(--lux-blue);
+    color: white;
+    border-color: var(--lux-blue);
+    box-shadow: 0 4px 10px rgba(0, 163, 224, 0.3);
+}
+
 #nav-lock-btn {
     border-color: var(--lux-red) !important;
     color: var(--lux-red) !important;
