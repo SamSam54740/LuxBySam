@@ -561,6 +561,27 @@ window.applyBulkIncrease = function() {
     customAlert(`Ajustement de ${increaseVal > 0 ? '+' : ''}${increaseVal}€ appliqué à l'écran ! Cliquez sur Sauvegarder.`);
 };
 
+window.applyAutoTiers = function() {
+    // 1. On vérifie toutes les cases affichées à l'écran
+    document.querySelectorAll('.admin-price-input').forEach(input => {
+        let prodId = parseInt(input.getAttribute('data-id'));
+        let p = products.find(prod => prod.id === prodId);
+        
+        if (p && p.priceCost !== undefined) {
+            // 2. LA FORMULE MATHÉMATIQUE EXACTE
+            // Ex: 12.50 / 10 = 1.25 -> Math.floor(1.25) = 1 -> 1 + 1 = 2€ de marge
+            let marge = Math.floor(p.priceCost / 10) + 1;
+            
+            // 3. Application (SANS ARRONDIS à 0.90)
+            let nouveauPrix = p.priceCost + marge;
+            input.value = nouveauPrix.toFixed(2);
+        }
+    });
+    
+    // 4. Message de confirmation
+    customAlert("✅ Paliers appliqués à l'écran ! Cliquez sur 'SAUVEGARDER LES PRIX' pour les envoyer sur Firebase.");
+};
+
 window.saveNewPrices = async function() {
     try {
         // 1. On récupère UNIQUEMENT les champs de prix qui sont affichés à l'écran
